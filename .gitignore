@@ -18,8 +18,13 @@
 *.exe
 *.out
 *.app
-test/bin/
+*.cubin
+*.ptx
+*.fatbin
+*.cu.o
+*.obj
 
+test/bin/
 build/
 CMakeLists.txt.user
 CMakeCache.txt
