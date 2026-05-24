@@ -51,7 +51,7 @@ __global__ void elementwise_add_f16x2_kernel(half *a, half *b, half *c, int N) {
 
 __global__ void elementwise_add_f16x8_kernel(half *a, half *b, half *c, int N) {
     int idx = 8 * (blockIdx.x * blockDim.x + threadIdx.x);
-    if ((idx + 8 < N)) {
+    if ((idx + 7) < N) {
         half2 reg_a_0 = HALF2(a[idx + 0]);
         half2 reg_a_1 = HALF2(a[idx + 2]);
         half2 reg_a_2 = HALF2(a[idx + 4]);
