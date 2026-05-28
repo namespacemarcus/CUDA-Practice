@@ -1,19 +1,9 @@
+#include "../../common/torch/bind_torch_utils.h"
 #include "relu.cuh"
 #include <cuda_runtime.h>
 #include <iostream>
 #include <torch/extension.h>
 #include <torch/types.h>
-
-#define STRINGFY(str) #str
-
-#define CHECK_TORCH_TENSOR_DTYPE(T, th_type)                                   \
-    if (((T).options().dtype() != (th_type))) {                                \
-        std::cout << "Tensor Info: " << (T).options() << std::endl;            \
-        throw std::runtime_error("values must be " #th_type);                  \
-    }
-
-#define TORCH_BINDING_COMMON_EXTENSION(func)                                   \
-    m.def(STRINGFY(func), &func, STRINGFY(func));
 
 #define TORCH_BINDING_RELU(packed_type, th_type, element_type, n_elements)     \
     void relu_##packed_type(torch::Tensor x, torch::Tensor y) {                \

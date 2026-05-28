@@ -1,3 +1,5 @@
+#pragma once
+
 #define WARP_SIZE          32
 #define INT4(value)        (reinterpret_cast<int4 *>(&(value))[0])
 #define FLOAT4(value)      (reinterpret_cast<float4 *>(&(value))[0])

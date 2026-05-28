@@ -1,4 +1,4 @@
-#include "../../common/cuda_utils.h"
+#include "../../common/cuda/cuda_utils.h"
 #include "relu.cuh"
 
 // FP32
@@ -82,12 +82,12 @@ __global__ void relu_f16x8_pack_kernel(half *x, half *y, int N) {
     half pack_x[8], pack_y[8]; // 8*16=128bits
 
     if ((idx + 7) < N) {
-        LDST128BITS(pack_x[idx]) = LDST128BITS(x[idx]);
+        LDST128BITS(pack_x[0]) = LDST128BITS(x[idx]);
 #pragma unroll
         for (int i = 0; i < 8; i += 2) {
             HALF2(pack_y[i]) = __hmax2(HALF2(pack_x[i]), zero2);
         }
-        LDST128BITS(y[idx]) = LDST128BITS(pack_y[idx]);
+        LDST128BITS(y[idx]) = LDST128BITS(pack_y[0]);
     } else {
         for (int i = idx; i < N; ++i) {
             y[i] = __hmax(__float2half(0.0f), x[i]);

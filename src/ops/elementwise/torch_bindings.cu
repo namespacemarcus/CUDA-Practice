@@ -1,16 +1,9 @@
+#include "../../common/torch/bind_torch_utils.h"
 #include "elementwise_add.cuh"
 #include <cuda_runtime.h>
 #include <iostream>
 #include <torch/extension.h>
 #include <torch/types.h>
-
-#define STRINGFY(str) #str
-
-#define CHECK_TORCH_TENSOR_DTYPE(T, th_type)                                   \
-    if (((T).options().dtype() != (th_type))) {                                \
-        std::cout << "Tensor Info: " << (T).options() << std::endl;            \
-        throw std::runtime_error("values must be " #th_type);                  \
-    }
 
 #define TORCH_BINDING_ELEMENTWISE_ADD(packed_type, th_type, element_type,      \
                                       n_elements)                              \
@@ -65,22 +58,10 @@ TORCH_BINDING_ELEMENTWISE_ADD(f16x8, torch::kHalf, half, 8)
 TORCH_BINDING_ELEMENTWISE_ADD(f16x8_pack, torch::kHalf, half, 8)
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-    m.doc() = "Element-wise add CUDA kernels.";
-
-    m.def("elementwise_add_f32", &elementwise_add_f32, "F32 element-wise add: c = a + b (1 thread / 1 element).",
-          pybind11::arg("a"), pybind11::arg("b"), pybind11::arg("c"));
-    m.def("elementwise_add_f32x4", &elementwise_add_f32x4,
-          "F32 element-wise add: c = a + b (1 threads / 4 elements).", pybind11::arg("a"), pybind11::arg("b"),
-          pybind11::arg("c"));
-    m.def("elementwise_add_f16", &elementwise_add_f16, "F16 element-wise add: c = a + b (1 thread / 1 half).",
-          pybind11::arg("a"), pybind11::arg("b"), pybind11::arg("c"));
-    m.def("elementwise_add_f16x2", &elementwise_add_f16x2,
-          "F16x2 element-wise add: c = a + b (1 threads / 2 half).", pybind11::arg("a"), pybind11::arg("b"),
-          pybind11::arg("c"));
-    m.def("elementwise_add_f16x8", &elementwise_add_f16x8,
-          "F16 element-wise add: c = a + b (1 threads / 8 halves, unpacked).", pybind11::arg("a"), pybind11::arg("b"),
-          pybind11::arg("c"));
-    m.def("elementwise_add_f16x8_pack", &elementwise_add_f16x8_pack,
-          "F16_pack element-wise add: c = a + b , 128-bit LDST (1 threads / 8 halves).", pybind11::arg("a"), pybind11::arg("b"),
-          pybind11::arg("c"));
+    TORCH_BINDING_COMMON_EXTENSION(elementwise_add_f32)
+    TORCH_BINDING_COMMON_EXTENSION(elementwise_add_f32x4)
+    TORCH_BINDING_COMMON_EXTENSION(elementwise_add_f16)
+    TORCH_BINDING_COMMON_EXTENSION(elementwise_add_f16x2)
+    TORCH_BINDING_COMMON_EXTENSION(elementwise_add_f16x8)
+    TORCH_BINDING_COMMON_EXTENSION(elementwise_add_f16x8_pack)
 }
