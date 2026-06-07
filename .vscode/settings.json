@@ -23,5 +23,6 @@
         "editor.formatOnSave": true
     },
 
-    "cmake.cmakePath": "/usr/bin/cmake"
+    "cmake.cmakePath": "/usr/bin/cmake",
+    "editor.fontFamily": "Ubuntu Mono"
 }
