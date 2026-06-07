@@ -4,7 +4,7 @@
 #include <cuda_fp8.h>
 
 /* fp32 */
-template <const int KWarpSize = WARP_SIZE>
+template <const int kWarpSize = WARP_SIZE>
 __device__ __forceinline__ float warp_reduce_sum_f32_f32(float val) {
 #pragma unroll
     for (int mask = kWarpSize >> 1; mask >= 1; mask >>= 1) {

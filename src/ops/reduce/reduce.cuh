@@ -65,22 +65,22 @@ __global__ void block_all_reduce_sum_f32x4_f32_kernel(float *a, float *y,
 
 // grid(N/256), block(256)
 template <const int NUM_THREADS = 256>
-__global__ void block_all_reduce_sum_f16_f16_kernel(half *a, half *y, int N) {
+__global__ void block_all_reduce_sum_f16_f16_kernel(half *a, float *y, int N) {
     int tid = threadIdx.x;
     int idx = blockIdx.x * NUM_THREADS + tid;
-    constexpr int NUM_WARPS = (NUM_THREADS + WARP_SIZE - 1) / WARPS_ZIE;
+    constexpr int NUM_WARPS = (NUM_THREADS + WARP_SIZE - 1) / WARP_SIZE;
     int warpId = tid / WARP_SIZE;
     int laneId = tid % WARP_SIZE;
     __shared__ float reduce_smem[NUM_WARPS];
 
     half sum_f16 = (idx < N) ? a[idx] : __float2half(0.0f);
     sum_f16 = warp_reduce_sum_f16_f16<WARP_SIZE>(sum_f16);
-    if (landId == 0) {
+    if (laneId == 0) {
         reduce_smem[warpId] = __half2float(sum_f16);
     }
     __syncthreads();
 
-    float sum = (laneId < NUM_WARPS) ? reduce_smem[landId] : 0.0f;
+    float sum = (laneId < NUM_WARPS) ? reduce _smem[laneId] : 0.0f;
     if (warpId == 0) {
         sum = warp_reduce_sum_f32_f32<NUM_WARPS>(sum);
     }
@@ -99,7 +99,7 @@ __global__ void block_all_reduce_sum_f16_f32_kernel(half *a, float *y, int N) {
     int laneId = tid % WARP_SIZE;
     __shared__ float reduce_smem[NUM_WARPS];
 
-    half sum_f16 = (idx < N) ? a[idx] : __half2float(0.0f);
+    half sum_f16 = (idx < N) ? a[idx] : __float2half(0.0f);
     float sum_f32 = warp_reduce_sum_f16_f32<WARP_SIZE>(sum_f16);
     if (laneId == 0) {
         reduce_smem[warpId] = sum_f32;
@@ -310,7 +310,7 @@ __global__ void block_all_reduce_sum_bf16x2_bf16_kernel(__nv_bfloat16 *a,
 
     __nv_bfloat162 reg = BFLOAT2(a[idx]);
     __nv_bfloat16 sum_bf16 =
-        (idx < N) ? __hadd(reg.x + reg.y) : __float2bfloat16(0.0f);
+        (idx < N) ? __hadd(reg.x, reg.y) : __float2bfloat16(0.0f);
     sum_bf16 = warp_reduce_sum_bf16_bf16<WARP_SIZE>(sum_bf16);
     if (laneId == 0) {
         reduce_smem[warpId] = sum_bf16;
@@ -432,7 +432,7 @@ template <const int NUM_THREADS = 256>
 __global__ void block_all_reduce_sum_fp8_e4m3_f16_kernel(__nv_fp8_storage_t *a,
                                                          float *y, int N) {
     int tid = threadIdx.x;
-    int idx = blockIdx * NUM_THREADS + tid;
+    int idx = blockIdx.x * NUM_THREADS + tid;
     constexpr int NUM_WARPS = (NUM_THREADS + WARP_SIZE - 1) / WARP_SIZE;
     int warpId = tid / WARP_SIZE;
     int laneId = tid % WARP_SIZE;
@@ -461,7 +461,7 @@ template <const int NUM_THREADS = 256>
 __global__ void block_all_reduce_sum_fp8_e5m2_f16_kernel(__nv_fp8_storage_t *a,
                                                          float *y, int N) {
     int tid = threadIdx.x;
-    int idx = blockIdx * NUM_THREADS + tid;
+    int idx = blockIdx.x * NUM_THREADS + tid;
     constexpr int NUM_WARPS = (NUM_THREADS + WARP_SIZE - 1) / WARP_SIZE;
     int warpId = tid / WARP_SIZE;
     int laneId = tid % WARP_SIZE;
@@ -502,7 +502,9 @@ block_all_reduce_sum_fp8_e4m3x16_pack_f16_kernel(__nv_fp8_storage_t *a,
     half sum_f16 = __float2half(0.0f);
 #pragma unroll
     for (int i = 0; i < 16; ++i) {
-        sum_f16 += __nv_cvt_fp8_to_halfraw(pack[i], __NV_E4M3);
+        if ((idx + i) < N) {
+            sum_f16 += __nv_cvt_fp8_to_halfraw(pack[i], __NV_E4M3);
+        }
     }
     sum_f16 = warp_reduce_sum_f16_f16<WARP_SIZE>(sum_f16);
     if (laneId == 0) {
