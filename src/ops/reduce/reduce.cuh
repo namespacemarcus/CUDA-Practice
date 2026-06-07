@@ -44,8 +44,18 @@ __global__ void block_all_reduce_sum_f32x4_f32_kernel(float *a, float *y,
     int laneId = tid % WARP_SIZE;
     __shared__ float reduce_smem[NUM_WARPS];
 
-    float4 reg = FLOAT4(a[idx]);
-    float sum = (idx < N) ? (reg.x + reg.y + reg.z + reg.w) : 0.0f;
+    float sum = 0.0f;
+    if (idx + 4 <= N) {
+        float4 reg = FLOAT4(a[idx]);
+        sum = reg.x + reg.y + reg.z + reg.w;
+    } else {
+#pragma unroll
+        for (int i = 0; i < 4; ++i) {
+            if (idx + i < N) {
+                sum += a[idx + i];
+            }
+        }
+    }
     sum = warp_reduce_sum_f32_f32<WARP_SIZE>(sum);
 
     if (laneId == 0) {
@@ -80,7 +90,7 @@ __global__ void block_all_reduce_sum_f16_f16_kernel(half *a, float *y, int N) {
     }
     __syncthreads();
 
-    float sum = (laneId < NUM_WARPS) ? reduce _smem[laneId] : 0.0f;
+    float sum = (laneId < NUM_WARPS) ? reduce_smem[laneId] : 0.0f;
     if (warpId == 0) {
         sum = warp_reduce_sum_f32_f32<NUM_WARPS>(sum);
     }
@@ -126,8 +136,13 @@ __global__ void block_all_reduce_sum_f16x2_f32_kernel(half *a, float *y,
     int laneId = tid % WARP_SIZE;
     __shared__ float reduce_smem[NUM_WARPS];
 
-    half2 reg = HALF2(a[idx]);
-    half sum_f16 = (idx < N) ? __hadd(reg.x, reg.y) : __float2half(0.0f);
+    half sum_f16 = __float2half(0.0f);
+    if (idx + 2 <= N) {
+        half2 reg = HALF2(a[idx]);
+        sum_f16 = __hadd(reg.x, reg.y);
+    } else if (idx < N) {
+        sum_f16 = a[idx];
+    }
     float sum_f32 = warp_reduce_sum_f16_f32<WARP_SIZE>(sum_f16);
     if (laneId == 0) {
         reduce_smem[warpId] = sum_f32;
@@ -154,8 +169,13 @@ __global__ void block_all_reduce_sum_f16x2_f16_kernel(half *a, float *y,
     int laneId = tid % WARP_SIZE;
     __shared__ float reduce_smem[NUM_WARPS];
 
-    half2 reg = HALF2(a[idx]);
-    half sum_f16 = (idx < N) ? __hadd(reg.x, reg.y) : __float2half(0.0f);
+    half sum_f16 = __float2half(0.0f);
+    if (idx + 2 <= N) {
+        half2 reg = HALF2(a[idx]);
+        sum_f16 = __hadd(reg.x, reg.y);
+    } else if (idx < N) {
+        sum_f16 = a[idx];
+    }
     sum_f16 = warp_reduce_sum_f16_f16<WARP_SIZE>(sum_f16);
     if (laneId == 0) {
         reduce_smem[warpId] = __half2float(sum_f16);
@@ -183,13 +203,20 @@ __global__ void block_all_reduce_sum_f16x8_pack_f16_kernel(half *a, float *y,
     int laneId = tid % WARP_SIZE;
     __shared__ float reduce_smem[NUM_WARPS];
 
-    half pack[8];
-    LDST128BITS(pack[0]) = LDST128BITS(a[idx]); // load 128 bits.
     half sum_f16 = __float2half(0.0f);
+    if (idx + 8 <= N) {
+        half pack[8];
+        LDST128BITS(pack[0]) = LDST128BITS(a[idx]); // load 128 bits.
 #pragma unroll
-    for (int i = 0; i < 8; ++i) {
-        if ((idx + i) < N) {
+        for (int i = 0; i < 8; ++i) {
             sum_f16 = __hadd(sum_f16, pack[i]);
+        }
+    } else {
+#pragma unroll
+        for (int i = 0; i < 8; ++i) {
+            if ((idx + i) < N) {
+                sum_f16 = __hadd(sum_f16, a[idx + i]);
+            }
         }
     }
     sum_f16 = warp_reduce_sum_f16_f16<WARP_SIZE>(sum_f16);
@@ -218,13 +245,20 @@ __global__ void block_all_reduce_sum_f16x8_pack_f32_kernel(half *a, float *y,
     int laneId = tid % WARP_SIZE;
     __shared__ float reduce_smem[NUM_WARPS];
 
-    half pack[8];
-    LDST128BITS(pack[0]) = LDST128BITS(a[idx]);
     float sum_f32 = 0.0f;
+    if (idx + 8 <= N) {
+        half pack[8];
+        LDST128BITS(pack[0]) = LDST128BITS(a[idx]);
 #pragma unroll
-    for (int i = 0; i < 8; ++i) {
-        if ((idx + i) < N) {
+        for (int i = 0; i < 8; ++i) {
             sum_f32 += __half2float(pack[i]);
+        }
+    } else {
+#pragma unroll
+        for (int i = 0; i < 8; ++i) {
+            if ((idx + i) < N) {
+                sum_f32 += __half2float(a[idx + i]);
+            }
         }
     }
     sum_f32 = warp_reduce_sum_f32_f32<WARP_SIZE>(sum_f32);
@@ -308,9 +342,13 @@ __global__ void block_all_reduce_sum_bf16x2_bf16_kernel(__nv_bfloat16 *a,
     int laneId = tid % WARP_SIZE;
     __shared__ __nv_bfloat16 reduce_smem[NUM_WARPS];
 
-    __nv_bfloat162 reg = BFLOAT2(a[idx]);
-    __nv_bfloat16 sum_bf16 =
-        (idx < N) ? __hadd(reg.x, reg.y) : __float2bfloat16(0.0f);
+    __nv_bfloat16 sum_bf16 = __float2bfloat16(0.0f);
+    if (idx + 2 <= N) {
+        __nv_bfloat162 reg = BFLOAT2(a[idx]);
+        sum_bf16 = __hadd(reg.x, reg.y);
+    } else if (idx < N) {
+        sum_bf16 = a[idx];
+    }
     sum_bf16 = warp_reduce_sum_bf16_bf16<WARP_SIZE>(sum_bf16);
     if (laneId == 0) {
         reduce_smem[warpId] = sum_bf16;
@@ -338,9 +376,13 @@ __global__ void block_all_reduce_sum_bf16x2_f32_kernel(__nv_bfloat16 *a,
     int laneId = tid % WARP_SIZE;
     __shared__ float reduce_smem[NUM_WARPS];
 
-    __nv_bfloat162 reg = BFLOAT2(a[idx]);
-    __nv_bfloat16 sum_bf16 =
-        (idx < N) ? __hadd(reg.x, reg.y) : __float2bfloat16(0.0f);
+    __nv_bfloat16 sum_bf16 = __float2bfloat16(0.0f);
+    if (idx + 2 <= N) {
+        __nv_bfloat162 reg = BFLOAT2(a[idx]);
+        sum_bf16 = __hadd(reg.x, reg.y);
+    } else if (idx < N) {
+        sum_bf16 = a[idx];
+    }
     float sum_f32 = warp_reduce_sum_bf16_f32<WARP_SIZE>(sum_bf16);
     if (laneId == 0) {
         reduce_smem[warpId] = sum_f32;
@@ -367,13 +409,20 @@ __global__ void block_all_reduce_sum_bf16x8_pack_bf16_kernel(__nv_bfloat16 *a,
     int laneId = tid % WARP_SIZE;
     __shared__ __nv_bfloat16 reduce_smem[NUM_WARPS];
 
-    __nv_bfloat16 pack[8];
-    LDST128BITS(pack[0]) = LDST128BITS(a[idx]);
     __nv_bfloat16 sum_bf16 = __float2bfloat16(0.0f);
+    if (idx + 8 <= N) {
+        __nv_bfloat16 pack[8];
+        LDST128BITS(pack[0]) = LDST128BITS(a[idx]);
 #pragma unroll
-    for (int i = 0; i < 8; ++i) {
-        if ((idx + i) < N) {
+        for (int i = 0; i < 8; ++i) {
             sum_bf16 = __hadd(sum_bf16, pack[i]);
+        }
+    } else {
+#pragma unroll
+        for (int i = 0; i < 8; ++i) {
+            if ((idx + i) < N) {
+                sum_bf16 = __hadd(sum_bf16, a[idx + i]);
+            }
         }
     }
     sum_bf16 = warp_reduce_sum_bf16_bf16<WARP_SIZE>(sum_bf16);
@@ -403,13 +452,20 @@ __global__ void block_all_reduce_sum_bf16x8_pack_f32_kernel(__nv_bfloat16 *a,
     int laneId = tid % WARP_SIZE;
     __shared__ float reduce_smem[NUM_WARPS];
 
-    __nv_bfloat16 pack[8];
-    LDST128BITS(pack[0]) = LDST128BITS(a[idx]);
     float sum_f32 = 0.0f;
+    if (idx + 8 <= N) {
+        __nv_bfloat16 pack[8];
+        LDST128BITS(pack[0]) = LDST128BITS(a[idx]);
 #pragma unroll
-    for (int i = 0; i < 8; ++i) {
-        if ((idx + i) < N) {
+        for (int i = 0; i < 8; ++i) {
             sum_f32 += __bfloat162float(pack[i]);
+        }
+    } else {
+#pragma unroll
+        for (int i = 0; i < 8; ++i) {
+            if ((idx + i) < N) {
+                sum_f32 += __bfloat162float(a[idx + i]);
+            }
         }
     }
     sum_f32 = warp_reduce_sum_f32_f32<WARP_SIZE>(sum_f32);
@@ -497,13 +553,20 @@ block_all_reduce_sum_fp8_e4m3x16_pack_f16_kernel(__nv_fp8_storage_t *a,
     int laneId = tid % WARP_SIZE;
     __shared__ half reduce_smem[NUM_WARPS];
 
-    __nv_fp8_storage_t pack[16];
-    LDST128BITS(pack[0]) = LDST128BITS(a[idx]);
     half sum_f16 = __float2half(0.0f);
+    if (idx + 16 <= N) {
+        __nv_fp8_storage_t pack[16];
+        LDST128BITS(pack[0]) = LDST128BITS(a[idx]);
 #pragma unroll
-    for (int i = 0; i < 16; ++i) {
-        if ((idx + i) < N) {
+        for (int i = 0; i < 16; ++i) {
             sum_f16 += __nv_cvt_fp8_to_halfraw(pack[i], __NV_E4M3);
+        }
+    } else {
+#pragma unroll
+        for (int i = 0; i < 16; ++i) {
+            if ((idx + i) < N) {
+                sum_f16 += __nv_cvt_fp8_to_halfraw(a[idx + i], __NV_E4M3);
+            }
         }
     }
     sum_f16 = warp_reduce_sum_f16_f16<WARP_SIZE>(sum_f16);
@@ -533,13 +596,20 @@ block_all_reduce_sum_fp8_e5m2x16_pack_f16_kernel(__nv_fp8_storage_t *a,
     int laneId = tid % WARP_SIZE;
     __shared__ half reduce_smem[NUM_WARPS];
 
-    __nv_fp8_storage_t pack[16];
-    LDST128BITS(pack[0]) = LDST128BITS(a[idx]);
     half sum_f16 = __float2half(0.0f);
+    if (idx + 16 <= N) {
+        __nv_fp8_storage_t pack[16];
+        LDST128BITS(pack[0]) = LDST128BITS(a[idx]);
 #pragma unroll
-    for (int i = 0; i < 16; ++i) {
-        if ((idx + i) < N) {
+        for (int i = 0; i < 16; ++i) {
             sum_f16 += __nv_cvt_fp8_to_halfraw(pack[i], __NV_E5M2);
+        }
+    } else {
+#pragma unroll
+        for (int i = 0; i < 16; ++i) {
+            if ((idx + i) < N) {
+                sum_f16 += __nv_cvt_fp8_to_halfraw(a[idx + i], __NV_E5M2);
+            }
         }
     }
     sum_f16 = warp_reduce_sum_f16_f16<WARP_SIZE>(sum_f16);
@@ -595,12 +665,21 @@ __global__ void block_all_reduce_sum_i8x16_pack_i32_kernel(int8_t *a,
     int laneId = tid % WARP_SIZE;
     __shared__ int32_t reduce_smem[NUM_WARPS];
 
-    int8_t pack[16];
-    LDST128BITS(pack[0]) = LDST128BITS(a[idx]);
     int32_t sum_i32 = 0;
+    if (idx + 16 <= N) {
+        int8_t pack[16];
+        LDST128BITS(pack[0]) = LDST128BITS(a[idx]);
 #pragma unroll
-    for (int i = 0; i < 16; ++i) {
-        sum_i32 += static_cast<int32_t>(pack[i]);
+        for (int i = 0; i < 16; ++i) {
+            sum_i32 += static_cast<int32_t>(pack[i]);
+        }
+    } else {
+#pragma unroll
+        for (int i = 0; i < 16; ++i) {
+            if ((idx + i) < N) {
+                sum_i32 += static_cast<int32_t>(a[idx + i]);
+            }
+        }
     }
     sum_i32 = warp_reduce_sum_i32_i32<WARP_SIZE>(sum_i32);
     if (laneId == 0) {
