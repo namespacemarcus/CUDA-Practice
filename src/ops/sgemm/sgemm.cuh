@@ -17,6 +17,8 @@ __global__ void sgemm_naive_f32_kernel(float *a, float *b, float *c, int M,
 template <const int BM = 32, const int BK = 32, const int BN = 32>
 __global__ void sgemm_k_tiled_f32_kernel(float *a, float *b, float *c, int M,
                                          int N, int K) {
+    /* BM = blockDim.y
+       BN = blockDim.x */
     __shared__ float a_smem[BM][BK];
     __shared__ float b_smem[BK][BN];
 
@@ -73,8 +75,9 @@ void sgemm_thread_tiled_8x8_and_k_tiled_f32x4_kernel(float *a, float *b,
     for (int bk = 0; bk < ((K + BK - 1) / BK); ++bk) {
         int a_gmem_col = bk * BK + a_smem_col;
         int a_gmem_addr = a_gmem_row * K + a_gmem_col;
-          FLOAT4(a_smem[a_smem_row][a_smem_col]) = FLOAT4(a[a_gmem_addr]);
-          int b_gmem_row = bk * BK + b_smem_row;    int b_gmem_addr = b_gmem_row * N + b_gmem_col;
+        FLOAT4(a_smem[a_smem_row][a_smem_col]) = FLOAT4(a[a_gmem_addr]);
+        int b_gmem_row = bk * BK + b_smem_row;
+        int b_gmem_addr = b_gmem_row * N + b_gmem_col;
         FLOAT4(b_smem[b_smem_row][b_smem_col]) = FLOAT4(b[b_gmem_addr]);
         __syncthreads();
 #pragma unroll
@@ -85,7 +88,7 @@ void sgemm_thread_tiled_8x8_and_k_tiled_f32x4_kernel(float *a, float *b,
                 for (int n = 0; n < TN; ++n) {
                     int a_smem_row_comp = threadIdx.y * TM + m;
                     int b_smem_col_comp = threadIdx.x * TN + n;
-                    r_c[m][n] =
+                    r_c[m][n] +=
                         a_smem[a_smem_row_comp][k] * b_smem[k][b_smem_col_comp];
                 }
             }
@@ -110,6 +113,5 @@ __global__ void sgemm_thread_tiled_8x8_and_k_tiled_f32x4_bcf_kernel(
     float *a, float *b, float *c, const int M, const int N, const int K) {
     __shared__ float a_smem
 
-    int tid = threadIdx.y * blockDim.x + threadIdx.x;
-
+        int tid = threadIdx.y * blockDim.x + threadIdx.x;
 }
