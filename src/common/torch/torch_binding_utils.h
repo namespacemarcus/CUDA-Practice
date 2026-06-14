@@ -15,3 +15,8 @@
 
 #define TORCH_BINDING_COMMON_EXTENSION(func)                                   \
     m.def(STRINGFY(func), &func, STRINGFY(func));
+
+#define CHECK_TORCH_TENSOR_SHAPE(T, S0, S1)                                    \
+    if (((T).size(0) != (S0)) || ((T).size(1) != (S1))) {                      \
+        throw std::runtime_error("Tensor size mismatch!");                     \
+    }
