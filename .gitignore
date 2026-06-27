@@ -24,7 +24,6 @@
 *.cu.o
 *.obj
 
-test/bin/
 build/
 CMakeLists.txt.user
 CMakeCache.txt
@@ -87,7 +86,6 @@ conda-env/
 *.tmp
 *.bak
 .cache/
-.pytest_cache/
 
 .mypy_cache/
 .ruff_cache/
