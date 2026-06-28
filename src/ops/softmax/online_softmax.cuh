@@ -10,7 +10,7 @@ __global__ void online_safe_softmax_f32_per_token_kernel(const float *x,
     int laneId = threadIdx.x % WARP_SIZE;
 
     MD val;
-    val.m = (idx < N) ? x[idx] : -FLI_MAX;
+    val.m = (idx < N) ? x[idx] : -FLT_MAX;
     val.d = (idx < N) ? 1.0f : 0.0f;
 
     __shared__ MD shared[NUM_WARPS];
@@ -45,7 +45,15 @@ online_safe_softmax_f32x4_pack_per_token_kernel(float *x, float *y, int N) {
     int warpId = threadIdx.x / WARP_SIZE;
     int laneId = threadIdx.x % WARP_SIZE;
 
-    float4 val = FLOAT4(x[idx]);
+    float4 val;
+    if (idx + 3 < N) {
+        val = FLOAT4(x[idx]);
+    } else {
+        val.x = (idx + 0 < N) ? x[idx + 0] : -FLT_MAX;
+        val.y = (idx + 1 < N) ? x[idx + 1] : -FLT_MAX;
+        val.z = (idx + 2 < N) ? x[idx + 2] : -FLT_MAX;
+        val.w = (idx + 3 < N) ? x[idx + 3] : -FLT_MAX;
+    }
     float local_m = fmaxf(fmaxf(val.x, val.y), fmaxf(val.z, val.w));
     float local_d = expf(val.x - local_m) + expf(val.y - local_m) +
                     expf(val.z - local_m) + expf(val.w - local_m);
@@ -60,7 +68,7 @@ online_safe_softmax_f32x4_pack_per_token_kernel(float *x, float *y, int N) {
 
     if (warpId == 0) {
         MD block_res =
-            threadIdx.x < NUM_WARPS ? shared[threadidx.x] : MD{-FLT_MAX, 0.0f};
+            threadIdx.x < NUM_WARPS ? shared[threadIdx.x] : MD{-FLT_MAX, 0.0f};
         block_res = warp_reduce_md_op<NUM_WARPS>(block_res);
         if (threadIdx.x == 0) {
             shared[0] = block_res;
@@ -70,12 +78,17 @@ online_safe_softmax_f32x4_pack_per_token_kernel(float *x, float *y, int N) {
 
     MD final_res = shared[0];
     float d_total_inverse = __fdividef(1.0f, final_res.d);
-    if (idx < N) {
+    if (idx + 3 < N) {
         float4 reg_y;
         reg_y.x = expf(val.x - final_res.m) * d_total_inverse;
         reg_y.y = expf(val.y - final_res.m) * d_total_inverse;
         reg_y.z = expf(val.z - final_res.m) * d_total_inverse;
         reg_y.w = expf(val.w - final_res.m) * d_total_inverse;
         FLOAT4(y[idx]) = reg_y;
+    } else {
+        if (idx + 0 < N) y[idx + 0] = expf(val.x - final_res.m) * d_total_inverse;
+        if (idx + 1 < N) y[idx + 1] = expf(val.y - final_res.m) * d_total_inverse;
+        if (idx + 2 < N) y[idx + 2] = expf(val.z - final_res.m) * d_total_inverse;
+        if (idx + 3 < N) y[idx + 3] = expf(val.w - final_res.m) * d_total_inverse;
     }
 }

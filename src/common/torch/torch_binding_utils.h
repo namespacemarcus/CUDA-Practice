@@ -20,3 +20,11 @@
     if (((T).size(0) != (S0)) || ((T).size(1) != (S1))) {                      \
         throw std::runtime_error("Tensor size mismatch!");                     \
     }
+
+#define CHECK_TORCH_TENSOR_SAME_SHAPE(T1, T2)                                  \
+    assert((T1).dim() == (T2).dim());                                          \
+    for (int i = 0; i < (T1).dim(); ++i) {                                     \
+        if ((T2).size(i) != (T1).size(i)) {                                    \
+            throw std::runtime_error("Tensor size mismatch!");                 \
+        }                                                                      \
+    }

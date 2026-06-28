@@ -55,6 +55,9 @@ __global__ void safe_softmax_f32x4_per_token_kernel(float *x, float *y, int N) {
         if (idx + 2 < N) {
             y[idx + 2] = reg_exp.z / exp_sum;
         }
+        if (idx + 3 < N) {
+            y[idx + 3] = reg_exp.w / exp_sum;
+        }
     }
 }
 
@@ -110,7 +113,7 @@ __global__ void safe_softmax_f16x8_pack_f32_per_token_kernel(half *x, half *y,
     LDST128BITS(pack_x[0]) = LDST128BITS(x[idx]);
 #pragma unroll
     for (int i = 0; i < 8; ++i) {
-        pack_x[i] = (idx + i < N) ? pack_x[i] : -FLT_MAX;
+        pack_x[i] = (idx + i < N) ? pack_x[i] : __float2half(-FLT_MAX);
     }
 
     float max_val = -FLT_MAX;

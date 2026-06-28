@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cuda_runtime.h>
 
 struct __align__(8) MD {

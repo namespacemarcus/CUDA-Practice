@@ -1,4 +1,6 @@
-#include "../../common/cuda/cuda_utils.h"
+#pragma once
+
+#include "../../../common/cuda/cuda_utils.h"
 #include "md.cuh"
 #include <float.h>
 
@@ -64,7 +66,7 @@ template <const int kWarpSize = WARP_SIZE>
 __device__ __forceinline__ MD warp_reduce_md_op(MD value) {
     unsigned int mask = 0xffffffff;
 #pragma unroll
-    for (int stride = kWarpSize >> 1; stride >>= 1; stride >>= 1) {
+    for (int stride = kWarpSize >> 1; stride >= 1; stride >>= 1) {
         MD other;
         other.m = __shfl_xor_sync(mask, value.m, stride);
         other.d = __shfl_xor_sync(mask, value.d, stride);
