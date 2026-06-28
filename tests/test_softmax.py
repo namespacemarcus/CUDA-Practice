@@ -1,7 +1,6 @@
 import pytest
 import torch
 import torch.nn.functional as F
-
 from conftest import load_op
 
 pytestmark = pytest.mark.skipif(
