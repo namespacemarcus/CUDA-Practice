@@ -13,11 +13,7 @@ lib = load_op(
     sources=["torch_bindings.cu"],
 )
 
-# Shapes valid for all kernels (naive and k_tiled work with any shape,
-# thread-tiled kernels require M, N >= BM=128).
-# (M, K, N)
-# The k_tiled kernel requires K to be a multiple of BK=32 (no bounds check for
-# partial tiles). The naive kernel handles arbitrary shapes.
+
 SHAPES_ALL = [
     (64, 64, 64),
     (128, 128, 128),
@@ -42,11 +38,6 @@ TILED_FNS = [
     "sgemm_thread_tiled_8x8_and_k_tiled_f32x4_bcf",
     "sgemm_thread_tiled_8x8_and_k_tiled_f32x4_bcf_offset",
 ]
-
-# sgemm kernels use a different accumulation order than cuBLAS (PyTorch's @),
-# so small floating-point differences are expected. Tolerances account for
-# error growth with K (each of K FMAs adds ~1 ulp of potential drift).
-# rtol=1e-3, atol=1e-4 is generous enough for K up to ~2048 with float32.
 
 
 @pytest.mark.parametrize("shape", SHAPES_ALL)
