@@ -13,8 +13,6 @@ lib = load_op(
     sources=["torch_bindings.cu"],
 )
 
-# softmax / safe_softmax: flat-index, N=S*H, block=H. Reduce functions require
-# H to be a multiple of 32 (warp size). H must match a dispatch case.
 SOFTMAX_SAFE_SHAPES_F32 = [
     (1, 32),
     (1, 128),
@@ -70,9 +68,6 @@ SOFTMAX_SAFE_SHAPES_F16X8 = [
     (1, 8192),
 ]
 
-# online_softmax: per-row indexing, N=H, block always 256 (f32) or 64 (f32x4).
-# f32 dispatch supports H ∈ {32,64,128,256,512,1024}.
-# f32x4 dispatch supports H ∈ {128,256,512,1024,2048,4096}.
 ONLINE_SHAPES_F32 = [
     (1, 32),
     (1, 64),
@@ -202,7 +197,6 @@ def test_safe_softmax_f16x8_pack_f32_per_token(shape):
     torch.testing.assert_close(y, _ref_softmax(x), rtol=1e-2, atol=1e-3)
 
 
-# ---- smoke test: all fns with H=256 ----
 @pytest.mark.parametrize("fn_name", ALL_F32_FNS + ALL_F16_FNS)
 def test_softmax_all_smoke(fn_name):
     S, H = 4, 256
