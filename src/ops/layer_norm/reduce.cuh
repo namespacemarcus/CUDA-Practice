@@ -40,8 +40,8 @@ __device__ __forceinline__ half warp_reduce_sum_f16_f16(half val) {
 template <const int NUM_THREADS = 256>
 __device__ half block_reduce_sum_f16_f16(half val) {
     constexpr int NUM_WARPS = (NUM_THREADS + WARP_SIZE - 1) / WARP_SIZE;
-    int warpId = NUM_THREADS / WARP_SIZE;
-    int laneId = NUM_THREADS % WARP_SIZE;
+    int warpId = threadIdx.x / WARP_SIZE;
+    int laneId = threadIdx.x % WARP_SIZE;
     __shared__ half shared[NUM_WARPS];
 
     val = warp_reduce_sum_f16_f16<WARP_SIZE>(val);

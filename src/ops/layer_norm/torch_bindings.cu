@@ -246,3 +246,14 @@ void layer_norm_f16x8_pack_f32(torch::Tensor x, torch::Tensor y, float g,
     const int d = x.size(1);
     DISPATCH_LAYER_NORM_F16x8_PACK_F32_KERNEL(s, d)
 }
+
+PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
+    TORCH_BINDING_COMMON_EXTENSION(layer_norm_f32)
+    TORCH_BINDING_COMMON_EXTENSION(layer_norm_f32x4)
+    TORCH_BINDING_COMMON_EXTENSION(layer_norm_f16_f16)
+    TORCH_BINDING_COMMON_EXTENSION(layer_norm_f16_f32)
+    TORCH_BINDING_COMMON_EXTENSION(layer_norm_f16x2_f16)
+    TORCH_BINDING_COMMON_EXTENSION(layer_norm_f16x8_f16)
+    TORCH_BINDING_COMMON_EXTENSION(layer_norm_f16x8_pack_f16)
+    TORCH_BINDING_COMMON_EXTENSION(layer_norm_f16x8_pack_f32)
+}
