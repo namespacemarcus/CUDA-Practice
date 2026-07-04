@@ -12,9 +12,7 @@ lib = load_op(
     sources=["torch_bindings.cu"],
 )
 
-# 2D shapes with last dim divisible by 8 (full-vector path for every pack variant)
 SHAPES = [(1024, 1024), (1024, 2048), (2048, 4096)]
-# 1D shapes with N not a multiple of 8 (exercises the scalar tail/fallback branch)
 FALLBACK_SHAPES = [(1025,), (2053,)]
 
 
