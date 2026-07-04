@@ -54,10 +54,18 @@ __global__ void rms_norm_f32x4_kernel(float *x, float *y, float gamma, int s,
     if (idx + 3 < len) {
         FLOAT4(y[idx]) = reg_y;
     } else {
-        if (idx + 0 < len) y[idx + 0] = reg_y.x;
-        if (idx + 1 < len) y[idx + 1] = reg_y.y;
-        if (idx + 2 < len) y[idx + 2] = reg_y.z;
-        if (idx + 3 < len) y[idx + 3] = reg_y.w;
+        if (idx + 0 < len) {
+            y[idx + 0] = reg_y.x;
+        }
+        if (idx + 1 < len) {
+            y[idx + 1] = reg_y.y;
+        }
+        if (idx + 2 < len) {
+            y[idx + 2] = reg_y.z;
+        }
+        if (idx + 3 < len) {
+            y[idx + 3] = reg_y.w;
+        }
     }
 }
 
@@ -114,8 +122,12 @@ __global__ void rms_norm_f16x2_f16_kernel(half *x, half *y, float gamma, int s,
     if (idx + 1 < len) {
         HALF2(y[idx]) = reg_y;
     } else {
-        if (idx + 0 < len) y[idx + 0] = reg_y.x;
-        if (idx + 1 < len) y[idx + 1] = reg_y.y;
+        if (idx + 0 < len) {
+            y[idx + 0] = reg_y.x;
+        }
+        if (idx + 1 < len) {
+            y[idx + 1] = reg_y.y;
+        }
     }
 }
 
@@ -170,14 +182,30 @@ __global__ void rms_norm_f16x8_f16_kernel(half *x, half *y, float gamma, int s,
         HALF2(y[idx + 4]) = reg_y_2;
         HALF2(y[idx + 6]) = reg_y_3;
     } else {
-        if (idx + 0 < len) y[idx + 0] = reg_y_0.x;
-        if (idx + 1 < len) y[idx + 1] = reg_y_0.y;
-        if (idx + 2 < len) y[idx + 2] = reg_y_1.x;
-        if (idx + 3 < len) y[idx + 3] = reg_y_1.y;
-        if (idx + 4 < len) y[idx + 4] = reg_y_2.x;
-        if (idx + 5 < len) y[idx + 5] = reg_y_2.y;
-        if (idx + 6 < len) y[idx + 6] = reg_y_3.x;
-        if (idx + 7 < len) y[idx + 7] = reg_y_3.y;
+        if (idx + 0 < len) {
+            y[idx + 0] = reg_y_0.x;
+        }
+        if (idx + 1 < len) {
+            y[idx + 1] = reg_y_0.y;
+        }
+        if (idx + 2 < len) {
+            y[idx + 2] = reg_y_1.x;
+        }
+        if (idx + 3 < len) {
+            y[idx + 3] = reg_y_1.y;
+        }
+        if (idx + 4 < len) {
+            y[idx + 4] = reg_y_2.x;
+        }
+        if (idx + 5 < len) {
+            y[idx + 5] = reg_y_2.y;
+        }
+        if (idx + 6 < len) {
+            y[idx + 6] = reg_y_3.x;
+        }
+        if (idx + 7 < len) {
+            y[idx + 7] = reg_y_3.y;
+        }
     }
 }
 
@@ -223,7 +251,9 @@ __global__ void rms_norm_f16x8_pack_f16_kernel(half *x, half *y, float gamma,
     } else {
 #pragma unroll
         for (int i = 0; i < 8; ++i) {
-            if (idx + i < len) y[idx + i] = pack_y[i];
+            if (idx + i < len) {
+                y[idx + i] = pack_y[i];
+            }
         }
     }
 }
@@ -299,14 +329,30 @@ __global__ void rms_norm_f16x8_f32_kernel(half *x, half *y, float gamma, int s,
         HALF2(y[idx + 4]) = __float22half2_rn(reg_y_2);
         HALF2(y[idx + 6]) = __float22half2_rn(reg_y_3);
     } else {
-        if (idx + 0 < len) y[idx + 0] = __float2half(reg_y_0.x);
-        if (idx + 1 < len) y[idx + 1] = __float2half(reg_y_0.y);
-        if (idx + 2 < len) y[idx + 2] = __float2half(reg_y_1.x);
-        if (idx + 3 < len) y[idx + 3] = __float2half(reg_y_1.y);
-        if (idx + 4 < len) y[idx + 4] = __float2half(reg_y_2.x);
-        if (idx + 5 < len) y[idx + 5] = __float2half(reg_y_2.y);
-        if (idx + 6 < len) y[idx + 6] = __float2half(reg_y_3.x);
-        if (idx + 7 < len) y[idx + 7] = __float2half(reg_y_3.y);
+        if (idx + 0 < len) {
+            y[idx + 0] = __float2half(reg_y_0.x);
+        }
+        if (idx + 1 < len) {
+            y[idx + 1] = __float2half(reg_y_0.y);
+        }
+        if (idx + 2 < len) {
+            y[idx + 2] = __float2half(reg_y_1.x);
+        }
+        if (idx + 3 < len) {
+            y[idx + 3] = __float2half(reg_y_1.y);
+        }
+        if (idx + 4 < len) {
+            y[idx + 4] = __float2half(reg_y_2.x);
+        }
+        if (idx + 5 < len) {
+            y[idx + 5] = __float2half(reg_y_2.y);
+        }
+        if (idx + 6 < len) {
+            y[idx + 6] = __float2half(reg_y_3.x);
+        }
+        if (idx + 7 < len) {
+            y[idx + 7] = __float2half(reg_y_3.y);
+        }
     }
 }
 
@@ -351,7 +397,9 @@ __global__ void rms_norm_f16x8_pack_f32_kernel(half *x, half *y, float gamma,
     } else {
 #pragma unroll
         for (int i = 0; i < 8; ++i) {
-            if (idx + i < len) y[idx + i] = pack_y[i];
+            if (idx + i < len) {
+                y[idx + i] = pack_y[i];
+            }
         }
     }
 }

@@ -124,7 +124,5 @@ def test_reduce_fp8_e4m3(n, fn_name):
 @pytest.mark.parametrize("n", SIZES)
 @pytest.mark.parametrize("fn_name", FP8_E5M2_FNS)
 def test_reduce_fp8_e4m3(n, fn_name):
-    x = (torch.rand(n, device="cuda", dtype=torch.float32) + 0.5).to(
-        torch.float8_e5m2
-    )
+    x = (torch.rand(n, device="cuda", dtype=torch.float32) + 0.5).to(torch.float8_e5m2)
     _check(fn_name, x, rtol=5e-2, atol=2e-2 * n)

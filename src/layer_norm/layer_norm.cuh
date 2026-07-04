@@ -323,7 +323,9 @@ __global__ void layer_norm_f16x8_pack_f16_kernel(half *x, half *y, float gamma,
 #pragma unroll
     for (int i = 0; i < 8; ++i) {
         half y_val =
-            ((idx + i) < s * d) ? __hfma((pack_x[i] - s_mean) * s_variance, gamma_, beta_) : zero_;
+            ((idx + i) < s * d)
+                ? __hfma((pack_x[i] - s_mean) * s_variance, gamma_, beta_)
+                : zero_;
         pack_y[i] = y_val;
     }
     if (idx + 7 < s * d) {
@@ -412,10 +414,11 @@ __global__ void layer_norm_f16x8_pack_f32_kernel(half *x, half *y, float gamma,
     half pack_y[8];
 #pragma unroll
     for (int i = 0; i < 8; ++i) {
-        float y_val = ((idx + i) < s * d)
-                          ? __fmaf_rn((__half2float(pack_x[i]) - s_mean) * s_variance,
-                                   gamma, beta)
-                          : 0.0f;
+        float y_val =
+            ((idx + i) < s * d)
+                ? __fmaf_rn((__half2float(pack_x[i]) - s_mean) * s_variance,
+                            gamma, beta)
+                : 0.0f;
         pack_y[i] = __float2half(y_val);
     }
     if (idx + 7 < s * d) {

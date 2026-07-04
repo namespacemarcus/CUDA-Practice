@@ -73,7 +73,7 @@ __device__ half block_reduce_sum_f16_f32(half val) {
     __shared__ float shared[NUM_WARPS];
 
     float val_f32 = warp_reduce_sum_f16_f32<WARP_SIZE>(val);
-    if(laneId==0){
+    if (laneId == 0) {
         shared[warpId] = val_f32;
     }
     __syncthreads();

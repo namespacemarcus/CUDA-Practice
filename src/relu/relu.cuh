@@ -2,7 +2,6 @@
 
 #include <cuda_fp16.h>
 
-
 __global__ void relu_f32_kernel(float *x, float *y, int N);
 __global__ void relu_f32x4_kernel(float *x, float *y, int N);
 

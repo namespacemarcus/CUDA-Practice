@@ -86,9 +86,17 @@ online_safe_softmax_f32x4_pack_per_token_kernel(float *x, float *y, int N) {
         reg_y.w = expf(val.w - final_res.m) * d_total_inverse;
         FLOAT4(y[idx]) = reg_y;
     } else {
-        if (idx + 0 < N) y[idx + 0] = expf(val.x - final_res.m) * d_total_inverse;
-        if (idx + 1 < N) y[idx + 1] = expf(val.y - final_res.m) * d_total_inverse;
-        if (idx + 2 < N) y[idx + 2] = expf(val.z - final_res.m) * d_total_inverse;
-        if (idx + 3 < N) y[idx + 3] = expf(val.w - final_res.m) * d_total_inverse;
+        if (idx + 0 < N) {
+            y[idx + 0] = expf(val.x - final_res.m) * d_total_inverse;
+        }
+        if (idx + 1 < N) {
+            y[idx + 1] = expf(val.y - final_res.m) * d_total_inverse;
+        }
+        if (idx + 2 < N) {
+            y[idx + 2] = expf(val.z - final_res.m) * d_total_inverse;
+        }
+        if (idx + 3 < N) {
+            y[idx + 3] = expf(val.w - final_res.m) * d_total_inverse;
+        }
     }
 }

@@ -80,8 +80,9 @@ F16X8_PACK_F32_SHAPES = [
 ]
 
 
-def _ref_layer_norm(x: torch.Tensor, gamma: float, beta: float,
-                    eps: float = EPS) -> torch.Tensor:
+def _ref_layer_norm(
+    x: torch.Tensor, gamma: float, beta: float, eps: float = EPS
+) -> torch.Tensor:
     """Reference layer norm: y = (x - mean) / sqrt(var + eps) * gamma + beta."""
     mean = x.mean(dim=-1, keepdim=True)
     var = x.var(dim=-1, keepdim=True, unbiased=False)
@@ -210,9 +211,7 @@ def test_layer_norm_all_smoke(fn_name):
     getattr(lib, fn_name)(x, y, gamma, beta)
     rtol = 1e-2 if dtype == torch.float16 else 1e-4
     atol = 1e-2 if dtype == torch.float16 else 1e-5
-    expected = _ref_layer_norm(
-        x.float() if dtype == torch.float16 else x, gamma, beta
-    )
+    expected = _ref_layer_norm(x.float() if dtype == torch.float16 else x, gamma, beta)
     if dtype == torch.float16:
         expected = expected.half()
     torch.testing.assert_close(y, expected, rtol=rtol, atol=atol)

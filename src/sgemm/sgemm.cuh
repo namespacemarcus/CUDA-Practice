@@ -59,9 +59,9 @@ __global__ void sgemm_k_tiled_f32_kernel(float *a, float *b, float *c, int M,
 
 template <const int BM = 128, const int BN = 128, const int BK = 8,
           const int TM = 8, const int TN = 8>
-__global__ void sgemm_thread_tiled_8x8_and_k_tiled_f32x4_kernel(float *a, float *b,
-                                                                  float *c, int M, int N,
-                                                                  int K) {
+__global__ void
+sgemm_thread_tiled_8x8_and_k_tiled_f32x4_kernel(float *a, float *b, float *c,
+                                                int M, int N, int K) {
     __shared__ float a_smem[BM][BK];
     __shared__ float b_smem[BK][BN];
 

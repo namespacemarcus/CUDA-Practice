@@ -27,7 +27,7 @@ __global__ void reduce(float *d_input, float *d_output) {
         __syncthreads();
     }
 
-    if(tid < 32){
+    if (tid < 32) {
         warpReduce(sdata, tid);
     }
 

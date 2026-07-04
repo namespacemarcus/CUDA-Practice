@@ -5,7 +5,7 @@
 
 __global__ void reduce(float *d_input, float *d_output) {
     __shared__ float sdata[THREADS_PER_BLOCK];
-    
+
     unsigned int index = blockIdx.x * (blockDim.x * 2) + threadIdx.x;
     unsigned int tid = threadIdx.x;
     sdata[tid] = d_input[index] + d_input[index + blockDim.x];
