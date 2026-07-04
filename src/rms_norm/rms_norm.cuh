@@ -253,6 +253,7 @@ template <const int NUM_THREADS = 256>
 __global__ void rms_norm_f16x8_f32_kernel(half *x, half *y, float gamma, int s,
                                           int d) {
     const float epsilon = 1e-5f;
+    const int len = s * d;
     int idx = (blockIdx.x * blockDim.x + threadIdx.x) * 8;
 
     __shared__ float s_r_rms;
