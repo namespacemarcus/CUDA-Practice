@@ -1,4 +1,4 @@
-#include "common/cuda/cuda_utils.h"
+#include "../common/cuda/cuda_utils.h"
 #include <cuda_fp16.h>
 
 template <const int kWarpSize = WARP_SIZE>
@@ -12,7 +12,7 @@ __device__ __forceinline__ float warp_reduce_sum_f32(float val) {
 
 template <const int NUM_THREADS = 256>
 __device__ __forceinline__ float block_reduce_sum_f32(float val) {
-    constexpr NUM_WARPS = (NUM_THREADS + WARP_SIZE - 1) / WARP_SIZE;
+    constexpr int NUM_WARPS = (NUM_THREADS + WARP_SIZE - 1) / WARP_SIZE;
     int warpId = threadIdx.x / WARP_SIZE;
     int laneId = threadIdx.x % WARP_SIZE;
     __shared__ float shared[NUM_WARPS];
