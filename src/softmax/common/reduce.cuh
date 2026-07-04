@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../../common/cuda/cuda_utils.h"
+#include "../../common/cuda/cuda_utils.h"
 #include "md.cuh"
 #include <float.h>
 

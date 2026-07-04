@@ -1,4 +1,4 @@
-#include "../../common/torch/torch_binding_utils.h"
+#include "../common/torch/torch_binding_utils.h"
 #include "online_softmax.cuh"
 #include "safe_softmax.cuh"
 #include "softmax.cuh"

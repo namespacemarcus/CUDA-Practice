@@ -1,4 +1,4 @@
-#include "../../common/torch/torch_binding_utils.h"
+#include "../common/torch/torch_binding_utils.h"
 #include "sgemm.cuh"
 
 void sgemm_naive_f32(torch::Tensor a, torch::Tensor b, torch::Tensor c) {

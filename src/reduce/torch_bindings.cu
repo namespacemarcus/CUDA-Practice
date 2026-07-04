@@ -1,4 +1,4 @@
-#include "../../common/torch/torch_binding_utils.h"
+#include "../common/torch/torch_binding_utils.h"
 #include "reduce.cuh"
 #include <cuda_runtime.h>
 #include <torch/version.h>

@@ -1,4 +1,4 @@
-#include "../../common/torch/torch_binding_utils.h"
+#include "../common/torch/torch_binding_utils.h"
 #include "embedding.cuh"
 #include <torch/extension.h>
 #include <torch/types.h>

@@ -23,8 +23,8 @@ DEFAULT_CFLAGS: List[str] = ["-std=c++17"]
 
 
 def load_op(name: str, op_subdir: str, sources: Sequence[str]):
-    """JIT-compile an op under src/ops/<op_dir>"""
-    op_dir = os.path.join(SRC_DIR, "ops", op_subdir)
+    """JIT-compile an op under src/<op_dir>"""
+    op_dir = os.path.join(SRC_DIR, op_subdir)
     full_sources = [os.path.join(op_dir, s) for s in sources]
     return load(
         name=name,

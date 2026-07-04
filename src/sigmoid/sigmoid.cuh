@@ -1,4 +1,4 @@
-#include "../../common/cuda/cuda_utils.h"
+#include "../common/cuda/cuda_utils.h"
 #include <cuda_fp16.h>
 
 __device__ __forceinline__ float clamp_exp_f32(float v) {

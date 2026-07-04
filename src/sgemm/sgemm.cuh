@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../common/cuda/cuda_utils.h"
+#include "../common/cuda/cuda_utils.h"
 
 // (M, K) @ (K, N) -> (M, N)
 

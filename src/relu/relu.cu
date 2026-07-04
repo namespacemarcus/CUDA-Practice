@@ -1,4 +1,4 @@
-#include "../../common/cuda/cuda_utils.h"
+#include "../common/cuda/cuda_utils.h"
 #include "relu.cuh"
 
 // FP32
