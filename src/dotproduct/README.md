@@ -1,5 +1,5 @@
 # Dot Product
-$a, b \in \mathbb{R}^{S \times D}$
+$a, b \in \mathbb{R}^{S \times K}$
 
 $$
 y = \sum_{i=1}^{N} a_i \cdot b_i

@@ -7,9 +7,9 @@
                           reinterpret_cast<element_type *>(b.data_ptr()),      \
                           prod.data_ptr<float>(), N);
 
-#define DISPATCH_DOT_PRODUCT_KERNEL(D, packed_type, acc_type, element_type,    \
+#define DISPATCH_DOT_PRODUCT_KERNEL(K, packed_type, acc_type, element_type,    \
                                     n_elements)                                \
-    const int NT = (D) / (n_elements);                                         \
+    const int NT = (K) / (n_elements);                                         \
     dim3 block(NT);                                                            \
     dim3 grid((S));                                                            \
     switch (NT) {                                                              \
@@ -33,7 +33,7 @@
         break;                                                                 \
     default:                                                                   \
         throw std::runtime_error(                                              \
-            "only support (D)/(n_elements): 32/64/128/256/512/1024");          \
+            "only support (K)/(n_elements): 32/64/128/256/512/1024");          \
         break;                                                                 \
     }
 
@@ -62,10 +62,10 @@
                     prod.data_ptr<float>(), N);                                \
         } else {                                                               \
             const int S = a.size(0);                                           \
-            const int D = a.size(1);                                           \
-            const int N = S * D;                                               \
-            if ((D / (n_elements)) <= 1024) {                                  \
-                DISPATCH_DOT_PRODUCT_KERNEL(D, packed_type, acc_type,          \
+            const int K = a.size(1);                                           \
+            const int N = S * K;                                               \
+            if ((K / (n_elements)) <= 1024) {                                  \
+                DISPATCH_DOT_PRODUCT_KERNEL(K, packed_type, acc_type,          \
                                             element_type, n_elements)          \
             } else {                                                           \
                 int N = 1;                                                     \
