@@ -37,13 +37,20 @@ __global__ void dot_product_f32x4_f32_kernel(float *a, float *b, float *y,
 
     __shared__ float shared[NUM_WARPS];
 
-    float4 reg_a = FLOAT4(a[idx]);
-    float4 reg_b = FLOAT4(b[idx]);
-    float prod = (idx < N) ? (reg_a.x * reg_b.x + reg_a.y * reg_b.y +
-                              reg_a.z * reg_b.z + reg_a.w * reg_b.w)
-                           : 0.0f;
+    float prod;
+    if (idx + 3 < N) {
+        float4 reg_a = FLOAT4(a[idx]);
+        float4 reg_b = FLOAT4(b[idx]);
+        prod = reg_a.x * reg_b.x + reg_a.y * reg_b.y + reg_a.z * reg_b.z +
+               reg_a.w * reg_b.w;
+    } else {
+        prod = 0.0f;
+        for (int i = idx; i < N; ++i) {
+            prod += a[i] * b[i];
+        }
+    }
     prod = warp_reduce_sum_f32<WARP_SIZE>(prod);
-    id(laneId == 0) {
+    if (laneId == 0) {
         shared[warpId] = prod;
     }
     __syncthreads();
@@ -74,7 +81,7 @@ __global__ void dot_product_f16_f32_kernel(half *a, half *b, float *y, int N) {
     }
     __syncthreads();
 
-    prod = (lane < NUM_WARPS) ? shared[laneId] : 0.0f;
+    prod = (laneId < NUM_WARPS) ? shared[laneId] : 0.0f;
     if (warpId == 0) {
         prod = warp_reduce_sum_f32<NUM_WARPS>(prod);
     }
@@ -94,14 +101,19 @@ __global__ void dot_product_f16x2_f32_kernel(half *a, half *b, float *y,
 
     __shared__ float shared[NUM_WARPS];
 
-    half2 reg_a = HALF2(a[idx]);
-    half2 reg_b = HALF2(b[idx]);
-    half prod_f16 =
-        (idx < N) ? __hadd(__hmul(reg_a.x, reg_b.x), __hmul(reg_a.y, reg_b.y))
-                  : __float2half(0.0f);
+    half prod_f16;
+    if (idx + 1 < N) {
+        half2 reg_a = HALF2(a[idx]);
+        half2 reg_b = HALF2(b[idx]);
+        prod_f16 = __hadd(__hmul(reg_a.x, reg_b.x), __hmul(reg_a.y, reg_b.y));
+    } else if (idx < N) {
+        prod_f16 = __hmul(a[idx], b[idx]);
+    } else {
+        prod_f16 = __float2half(0.0f);
+    }
     float prod = warp_reduce_sum_f16_f32<WARP_SIZE>(prod_f16);
     if (laneId == 0) {
-        shared[warpId] == prod;
+        shared[warpId] = prod;
     }
     __syncthreads();
 
@@ -126,18 +138,25 @@ __global__ void dot_product_f16x8_pack_f32_kernel(half *a, half *b, float *y,
     __shared__ float shared[NUM_WARPS];
 
     half pack_a[8], pack_b[8];
-    LDST128BITS(pack_a[0]) = LDST128BITS(a[idx]);
-    LDST128BITS(pack_b[0]) = LDST128BITS(b[idx]);
-
-    half prod_f16 = __float2half(0.0f);
+    half prod_f16;
+    if (idx + 7 < N) {
+        LDST128BITS(pack_a[0]) = LDST128BITS(a[idx]);
+        LDST128BITS(pack_b[0]) = LDST128BITS(b[idx]);
+        prod_f16 = __float2half(0.0f);
 #pragma unroll
-    for (int i = 0; i < 8; i += 2) {
-        half2 v = __hmul2(HALF2(pack_a[i]), HALF2(pack_b[i]));
-        prod_f16 += idx + i < N ? v.x + v.y : __float2half(0.0f);
+        for (int i = 0; i < 8; i += 2) {
+            half2 v = __hmul2(HALF2(pack_a[i]), HALF2(pack_b[i]));
+            prod_f16 = __hadd(prod_f16, __hadd(v.x, v.y));
+        }
+    } else {
+        prod_f16 = __float2half(0.0f);
+        for (int i = idx; i < N; ++i) {
+            prod_f16 = __hadd(prod_f16, __hmul(a[i], b[i]));
+        }
     }
     float prod = warp_reduce_sum_f16_f32<WARP_SIZE>(prod_f16);
     if (laneId == 0) {
-        shared[warpId] == prod;
+        shared[warpId] = prod;
     }
     __syncthreads();
 
