@@ -60,7 +60,7 @@ void sgemv_k16_f32(torch::Tensor A, torch::Tensor x, torch::Tensor y) {
     sgemv_k16_f32_kernel<ROW_PER_WARP>
         <<<grid, block>>>(reinterpret_cast<float *>(A.data_ptr()),
                           reinterpret_cast<float *>(x.data_ptr()),
-                          reinterpret_cast<float *>(y.data_ptr()), M, K)
+                          reinterpret_cast<float *>(y.data_ptr()), M, K);
 }
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {

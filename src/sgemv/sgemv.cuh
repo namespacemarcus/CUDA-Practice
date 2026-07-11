@@ -12,8 +12,10 @@ __global__ void sgemv_k32_f32_kernel(float *A, float *x, float *y, int M,
     int num_k_tiles = (K + WARP_SIZE - 1) / WARP_SIZE;
 #pragma unroll
     for (int tile = 0; tile < num_k_tiles; ++tile) {
-        int k = tile * num_k_tiles + laneId;
-        sum += A[m * K + k] * x[k];
+        int k = tile * WARP_SIZE + laneId;
+        if (k < K) {
+            sum += A[m * K + k] * x[k];
+        }
     }
     sum = warp_reduce_sum_f32<WARP_SIZE>(sum);
     if (laneId == 0) {
@@ -53,12 +55,12 @@ __global__ void sgemv_k16_f32_kernel(float *A, float *x, float *y, int M,
     int k = laneId % THREADS_PER_ROW;
     int m = (blockIdx.y * blockDim.y + threadIdx.y) * ROW_PER_WARP +
             laneId / THREADS_PER_ROW;
-    if (m >= M) {
-        return;
+    float sum = 0.0f;
+    if (m < M) {
+        sum = A[m * K + k] * x[k];
     }
-    float sum = A[m * K + k] * x[k];
     sum = warp_reduce_sum_f32<THREADS_PER_ROW>(sum);
-    if (k == 0) {
+    if (k == 0 && m < M) {
         y[m] = sum;
     }
 }
