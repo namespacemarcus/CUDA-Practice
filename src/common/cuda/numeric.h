@@ -1,0 +1,6 @@
+#pragma once
+
+#define MAX_EXP_F32 88.3762626647949f
+#define MIN_EXP_F32 -88.3762626647949f
+#define MAX_EXP_F16 __float2half(11.089866488461016f)
+#define MIN_EXP_F16 __float2half(-9.704060527839234f)
