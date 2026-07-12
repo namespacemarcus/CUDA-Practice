@@ -1,4 +1,4 @@
-#include "rms_norm_launch.cuh"
+#include "rmsnorm.cuh"
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     TORCH_BINDING_COMMON_EXTENSION(rms_norm_f32)

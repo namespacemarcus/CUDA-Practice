@@ -1,4 +1,4 @@
-#include "elu_launch.cuh"
+#include "elu.cuh"
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     TORCH_BINDING_COMMON_EXTENSION(elu_f32)

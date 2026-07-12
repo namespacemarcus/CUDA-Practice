@@ -1,4 +1,4 @@
-#include "reduce_launch.cuh"
+#include "reduce.cuh"
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     m.doc() = "block-all-reduce sum CUDA kernels (returns a scalar tensor).";

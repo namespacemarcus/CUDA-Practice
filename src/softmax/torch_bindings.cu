@@ -1,4 +1,4 @@
-#include "softmax_launch.cuh"
+#include "softmax.cuh"
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     TORCH_BINDING_COMMON_EXTENSION(softmax_f32_per_token)

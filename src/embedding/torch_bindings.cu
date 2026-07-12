@@ -1,4 +1,4 @@
-#include "embedding_launch.cuh"
+#include "embedding.cuh"
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     TORCH_BINDING_COMMON_EXTENSION(embedding_f32);

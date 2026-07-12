@@ -1,4 +1,4 @@
-#include "dot_product_launch.cuh"
+#include "dot_product.cuh"
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     TORCH_BINDING_COMMON_EXTENSION(dot_product_f32_f32)

@@ -1,4 +1,4 @@
-#include "sigmoid_launch.cuh"
+#include "sigmoid.cuh"
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     TORCH_BINDING_COMMON_EXTENSION(sigmoid_f32)

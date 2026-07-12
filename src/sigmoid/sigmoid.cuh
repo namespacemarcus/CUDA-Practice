@@ -1,138 +1,50 @@
+#pragma once
+
 #include "../common/cuda/cuda_utils.h"
-#include <cuda_fp16.h>
+#include "sigmoid_kernel.cuh"
 
-__device__ __forceinline__ float clamp_exp_f32(float v) {
-    return fminf(fmaxf(v, MIN_EXP_F32), MAX_EXP_F32);
-}
-
-__device__ __forceinline__ half clamp_exp_f16(half v) {
-    return __hmin(__hmax(v, MIN_EXP_F16), MAX_EXP_F16);
-}
-
-__global__ void sigmoid_f32_kernel(float *x, float *y, int N) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < N) {
-        float v = x[idx];
-        v = clamp_exp_f32(v);
-        y[idx] = 1.0f / (1.0f + expf(-v));
+#define TORCH_BINDING_SIGMOID(packed_type, th_type, element_type, n_elements)  \
+    void sigmoid_##packed_type(torch::Tensor x, torch::Tensor y) {             \
+        CHECK_TORCH_TENSOR_DTYPE(x, (th_type))                                 \
+        CHECK_TORCH_TENSOR_DTYPE(y, (th_type))                                 \
+        const int ndim = x.dim();                                              \
+        if (ndim != 2) {                                                       \
+            int N = 1;                                                         \
+            for (int i = 0; i < ndim; ++i) {                                   \
+                N *= x.size(i);                                                \
+            }                                                                  \
+            dim3 block(256 / (n_elements));                                    \
+            dim3 grid((N + 256 - 1) / 256);                                    \
+            sigmoid_##packed_type##_kernel<<<grid, block>>>(                   \
+                reinterpret_cast<element_type *>(x.data_ptr()),                \
+                reinterpret_cast<element_type *>(y.data_ptr()), N);            \
+        } else {                                                               \
+            const int S = x.size(0);                                           \
+            const int D = x.size(1);                                           \
+            const int N = S * D;                                               \
+            if ((D / (n_elements)) <= 1024) {                                  \
+                dim3 block(D / (n_elements));                                  \
+                dim3 grid(S);                                                  \
+                sigmoid_##packed_type##_kernel<<<grid, block>>>(               \
+                    reinterpret_cast<element_type *>(x.data_ptr()),            \
+                    reinterpret_cast<element_type *>(y.data_ptr()), N);        \
+            } else {                                                           \
+                int N = 1;                                                     \
+                for (int i = 0; i < ndim; ++i) {                               \
+                    N *= x.size(i);                                            \
+                }                                                              \
+                dim3 block(256 / (n_elements));                                \
+                dim3 grid((N + 256 - 1) / 256);                                \
+                sigmoid_##packed_type##_kernel<<<grid, block>>>(               \
+                    reinterpret_cast<element_type *>(x.data_ptr()),            \
+                    reinterpret_cast<element_type *>(y.data_ptr()), N);        \
+            }                                                                  \
+        }                                                                      \
     }
-}
 
-__global__ void sigmoid_f32x4_kernel(float *x, float *y, int N) {
-    int idx = (blockIdx.x * blockDim.x + threadIdx.x) * 4;
-    if (idx + 3 < N) {
-        float4 reg_x = FLOAT4(x[idx]);
-        reg_x.x = clamp_exp_f32(reg_x.x);
-        reg_x.y = clamp_exp_f32(reg_x.y);
-        reg_x.z = clamp_exp_f32(reg_x.z);
-        reg_x.w = clamp_exp_f32(reg_x.w);
-
-        float4 reg_y;
-        reg_y.x = 1.0f / (1.0f + expf(-reg_x.x));
-        reg_y.y = 1.0f / (1.0f + expf(-reg_x.y));
-        reg_y.z = 1.0f / (1.0f + expf(-reg_x.z));
-        reg_y.w = 1.0f / (1.0f + expf(-reg_x.w));
-
-        FLOAT4(y[idx]) = reg_y;
-    } else {
-        for (int i = idx; i < N; ++i) {
-            float v = x[i];
-            v = clamp_exp_f32(v);
-            y[i] = 1.0f / (1.0f + expf(-v));
-        }
-    }
-}
-
-__global__ void sigmoid_f16_kernel(half *x, half *y, int N) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    const half f = __float2half(1.0f);
-    if (idx < N) {
-        half v = x[idx];
-        v = clamp_exp_f16(v);
-        y[idx] = f / (f + hexp(-v));
-    }
-}
-
-__global__ void sigmoid_f16x2_kernel(half *x, half *y, int N) {
-    int idx = (blockIdx.x * blockDim.x + threadIdx.x) * 2;
-    const half f = __float2half(1.0f);
-    if (idx + 1 < N) {
-        half2 reg_x = HALF2(x[idx]);
-        half2 reg_y;
-        reg_x.x = clamp_exp_f16(reg_x.x);
-        reg_x.y = clamp_exp_f16(reg_x.y);
-
-        reg_y.x = f / (f + hexp(-reg_x.x));
-        reg_y.y = f / (f + hexp(-reg_x.y));
-
-        HALF2(y[idx]) = reg_y;
-    } else if (idx < N) {
-        half v = x[idx];
-        v = clamp_exp_f16(v);
-        y[idx] = f / (f + hexp(-v));
-    }
-}
-
-__global__ void sigmoid_f16x8_kernel(half *x, half *y, int N) {
-    int idx = (blockIdx.x * blockDim.x + threadIdx.x) * 8;
-    const half f = __float2half(1.0f);
-    if (idx + 7 < N) {
-        half2 reg_x_0 = HALF2(x[idx + 0]);
-        half2 reg_x_1 = HALF2(x[idx + 2]);
-        half2 reg_x_2 = HALF2(x[idx + 4]);
-        half2 reg_x_3 = HALF2(x[idx + 6]);
-
-        reg_x_0.x = clamp_exp_f16(reg_x_0.x);
-        reg_x_0.y = clamp_exp_f16(reg_x_0.y);
-        reg_x_1.x = clamp_exp_f16(reg_x_1.x);
-        reg_x_1.y = clamp_exp_f16(reg_x_1.y);
-        reg_x_2.x = clamp_exp_f16(reg_x_2.x);
-        reg_x_2.y = clamp_exp_f16(reg_x_2.y);
-        reg_x_3.x = clamp_exp_f16(reg_x_3.x);
-        reg_x_3.y = clamp_exp_f16(reg_x_3.y);
-
-        half2 reg_y_0, reg_y_1, reg_y_2, reg_y_3;
-
-        reg_y_0.x = f / (f + hexp(-reg_x_0.x));
-        reg_y_0.y = f / (f + hexp(-reg_x_0.y));
-        reg_y_1.x = f / (f + hexp(-reg_x_1.x));
-        reg_y_1.y = f / (f + hexp(-reg_x_1.y));
-        reg_y_2.x = f / (f + hexp(-reg_x_2.x));
-        reg_y_2.y = f / (f + hexp(-reg_x_2.y));
-        reg_y_3.x = f / (f + hexp(-reg_x_3.x));
-        reg_y_3.y = f / (f + hexp(-reg_x_3.y));
-
-        HALF2(y[idx + 0]) = reg_y_0;
-        HALF2(y[idx + 2]) = reg_y_1;
-        HALF2(y[idx + 4]) = reg_y_2;
-        HALF2(y[idx + 6]) = reg_y_3;
-    } else {
-        for (int i = idx; i < N; ++i) {
-            half v = x[i];
-            v = clamp_exp_f16(v);
-            y[i] = f / (f + hexp(-v));
-        }
-    }
-}
-
-__global__ void sigmoid_f16x8_pack_kernel(half *x, half *y, int N) {
-    int idx = (blockIdx.x * blockDim.x + threadIdx.x) * 8;
-    const half f = __float2half(1.0f);
-    half pack_x[8], pack_y[8];
-    if (idx + 7 < N) {
-        LDST128BITS(pack_x[0]) = LDST128BITS(x[idx]);
-
-#pragma unroll
-        for (int i = 0; i < 8; ++i) {
-            half v = clamp_exp_f16(pack_x[i]);
-            pack_y[i] = f / (f + hexp(-v));
-        }
-        LDST128BITS(y[idx]) = LDST128BITS(pack_y[0]);
-    } else {
-        for (int i = idx; i < N; ++i) {
-            half v = x[i];
-            v = clamp_exp_f16(v);
-            y[i] = f / (f + hexp(-v));
-        }
-    }
-}
+TORCH_BINDING_SIGMOID(f32, torch::kFloat32, float, 1)
+TORCH_BINDING_SIGMOID(f32x4, torch::kFloat32, float, 4)
+TORCH_BINDING_SIGMOID(f16, torch::kHalf, half, 1)
+TORCH_BINDING_SIGMOID(f16x2, torch::kHalf, half, 2)
+TORCH_BINDING_SIGMOID(f16x8, torch::kHalf, half, 8)
+TORCH_BINDING_SIGMOID(f16x8_pack, torch::kHalf, half, 8)

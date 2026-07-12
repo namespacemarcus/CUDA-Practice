@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../common/cuda/cuda_utils.h"
-#include "layer_norm.cuh"
+#include "layernorm_kernel.cuh"
 
 // f32
 #define LAUNCH_LAYER_NORM_F32_KERNEL(d)                                        \

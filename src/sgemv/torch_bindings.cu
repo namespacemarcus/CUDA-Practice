@@ -1,4 +1,4 @@
-#include "sgemv_launch.cuh"
+#include "sgemv.cuh"
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     TORCH_BINDING_COMMON_EXTENSION(sgemv_k32_f32)

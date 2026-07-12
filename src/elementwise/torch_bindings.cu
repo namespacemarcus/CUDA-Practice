@@ -1,4 +1,4 @@
-#include "elementwise_add_launch.cuh"
+#include "elementwise_add.cuh"
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     TORCH_BINDING_COMMON_EXTENSION(elementwise_add_f32)

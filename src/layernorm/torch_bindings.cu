@@ -1,4 +1,4 @@
-#include "layer_norm_launch.cuh"
+#include "layernorm.cuh"
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     TORCH_BINDING_COMMON_EXTENSION(layer_norm_f32)

@@ -7,8 +7,8 @@ pytestmark = pytest.mark.skipif(
 )
 
 lib = load_op(
-    name="rms_norm_lib",
-    op_subdir="rms_norm",
+    name="rmsnorm_lib",
+    op_subdir="rmsnorm",
     sources=["torch_bindings.cu"],
 )
 

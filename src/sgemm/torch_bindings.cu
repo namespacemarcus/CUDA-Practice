@@ -1,4 +1,4 @@
-#include "sgemm_launch.cuh"
+#include "sgemm.cuh"
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     TORCH_BINDING_COMMON_EXTENSION(sgemm_naive_f32)

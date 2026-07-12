@@ -1,5 +1,5 @@
 #include "../common/cuda/cuda_utils.h"
-#include "relu.cuh"
+#include "relu_kernel.cuh"
 
 // FP32
 __global__ void relu_f32_kernel(float *x, float *y, int N) {

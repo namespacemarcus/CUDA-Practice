@@ -7,8 +7,8 @@ pytestmark = pytest.mark.skipif(
 )
 
 lib = load_op(
-    name="layer_norm_lib",
-    op_subdir="layer_norm",
+    name="layernorm_lib",
+    op_subdir="layernorm",
     sources=["torch_bindings.cu"],
 )
 

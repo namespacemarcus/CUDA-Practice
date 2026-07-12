@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../common/cuda/cuda_utils.h"
-#include "rms_norm.cuh"
+#include "rmsnorm_kernel.cuh"
 
 // f32
 #define LAUNCH_RMS_NORM_F32_KERNEL(K)                                          \

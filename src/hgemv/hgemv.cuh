@@ -1,61 +1,72 @@
-#include "reduce.cuh"
+#pragma once
 
-__global__ void hgemv_k32_f16_kernel(half *A, half *x, half *y, int M, int K) {
-    int m = blockIdx.y * blockDim.y + threadIdx.y;
-    int laneId = threadIdx.x % WARP_SIZE;
-    if (m < M) {
-        float sum = 0.0f;
-        int num_k_tiles = (K + WARP_SIZE - 1) / WARP_SIZE;
-#pragma unroll
-        for (int tile = 0; tile < num_k_tiles; ++tile) {
-            int k = tile * WARP_SIZE + laneId;
-            sum += __half2float(A[m * K + k]) * __half2float(x[k]);
-        }
-        sum = warp_reduce_sum_f32<WARP_SIZE>(sum);
-        if (laneId == 0) {
-            y[m] = __float2half(sum);
-        }
+#include "../common/cuda/cuda_utils.h"
+#include "hgemv_kernel.cuh"
+
+void hgemv_k32_f16(torch::Tensor A, torch::Tensor x, torch::Tensor y) {
+    CHECK_TORCH_TENSOR_DTYPE(A, torch::kHalf)
+    CHECK_TORCH_TENSOR_DTYPE(x, torch::kHalf)
+    CHECK_TORCH_TENSOR_DTYPE(y, torch::kHalf)
+    const int M = A.size(0);
+    const int K = A.size(1);
+    CHECK_TORCH_TENSOR_SHAPE(A, M, K)
+    CHECK_TORCH_TENSOR_SHAPE(x, K, 1)
+    CHECK_TORCH_TENSOR_SHAPE(y, M, 1)
+    if (K % 32 != 0) {
+        throw std::runtime_error("K must be multiple of 32.");
     }
+
+    dim3 block(32, 4);
+    dim3 grid(1, (M + 4 - 1) / 4);
+    hgemv_k32_f16_kernel<<<grid, block>>>(
+        reinterpret_cast<half *>(A.data_ptr()),
+        reinterpret_cast<half *>(x.data_ptr()),
+        reinterpret_cast<half *>(y.data_ptr()), M, K);
 }
 
-__global__ void hgemv_k128_f16x4_kernel(half *A, half *x, half *y, int M,
-                                        int K) {
-    int m = blockIdx.y * blockDim.y + threadIdx.y;
-    int laneId = threadIdx.x % WARP_SIZE;
-    if (m < M) {
-        float sum = 0.0f;
-        int num_k_tiles = (((K + WARP_SIZE - 1) / WARP_SIZE) + 4 - 1) / 4;
-#pragma unroll
-        for (int tile = 0; tile < num_k_tiles; ++tile) {
-            int k = (tile * WARP_SIZE + laneId) * 4;
-            float2 reg_x_0 = __half22float2(HALF2(x[k + 0]));
-            float2 reg_x_1 = __half22float2(HALF2(x[k + 2]));
-            float2 reg_A_0 = __half22float2(HALF2(A[m * K + k + 0]));
-            float2 reg_A_1 = __half22float2(HALF2(A[m * K + k + 2]));
-            sum += (reg_x_0.x * reg_A_0.x + reg_x_0.y * reg_A_0.y +
-                    reg_x_1.x * reg_A_1.x + reg_x_1.y * reg_A_1.y);
-        }
-        sum = warp_reduce_sum_f32<WARP_SIZE>(sum);
-        if (laneId == 0) {
-            y[m] = __float2half(sum);
-        }
+void hgemv_k128_f16x4(torch::Tensor A, torch::Tensor x, torch::Tensor y) {
+    CHECK_TORCH_TENSOR_DTYPE(A, torch::kHalf)
+    CHECK_TORCH_TENSOR_DTYPE(x, torch::kHalf)
+    CHECK_TORCH_TENSOR_DTYPE(y, torch::kHalf)
+    const int M = A.size(0);
+    const int K = A.size(1);
+    CHECK_TORCH_TENSOR_SHAPE(A, M, K)
+    CHECK_TORCH_TENSOR_SHAPE(x, K, 1)
+    CHECK_TORCH_TENSOR_SHAPE(y, M, 1)
+    if (K % 128 != 0) {
+        throw std::runtime_error("K must be multiple of 128.");
     }
+
+    dim3 block(32, 4);
+    dim3 grid(1, (M + 4 - 1) / 4);
+    hgemv_k128_f16x4_kernel<<<grid, block>>>(
+        reinterpret_cast<half *>(A.data_ptr()),
+        reinterpret_cast<half *>(x.data_ptr()),
+        reinterpret_cast<half *>(y.data_ptr()), M, K);
 }
 
-template <const int ROW_PER_WARP = 2>
-__global__ void hgemv_k16_f16_kernel(half *A, half *x, half *y, int M, int K) {
-    constexpr int THREADS_PER_ROW =
-        (WARP_SIZE + ROW_PER_WARP - 1) / ROW_PER_WARP;
-    int laneId = threadIdx.x % WARP_SIZE;
-    int k = laneId % THREADS_PER_ROW;
-    int m = (blockIdx.y * blockDim.y + threadIdx.y) * ROW_PER_WARP +
-            laneId / THREADS_PER_ROW;
-    float sum = 0.0f;
-    if (m < M) {
-        sum = __half2float(A[m * K + k]) * __half2float(x[k]);
+void hgemv_k16_f16(torch::Tensor A, torch::Tensor x, torch::Tensor y) {
+    CHECK_TORCH_TENSOR_DTYPE(A, torch::kHalf)
+    CHECK_TORCH_TENSOR_DTYPE(x, torch::kHalf)
+    CHECK_TORCH_TENSOR_DTYPE(y, torch::kHalf)
+    const int M = A.size(0);
+    const int K = A.size(1);
+    CHECK_TORCH_TENSOR_SHAPE(A, M, K)
+    CHECK_TORCH_TENSOR_SHAPE(x, K, 1)
+    CHECK_TORCH_TENSOR_SHAPE(y, M, 1)
+    if (K != 16) {
+        throw std::runtime_error("K must be 16.");
     }
-    sum = warp_reduce_sum_f32<THREADS_PER_ROW>(sum);
-    if (k == 0 && m < M) {
-        y[m] = __float2half(sum);
-    }
+
+    constexpr int NUM_THREADS = 128;
+    constexpr int ROW_PER_WARP = 2;
+    constexpr int NUM_WARPS = NUM_THREADS / WARP_SIZE;
+    constexpr int NUM_ROWS = NUM_WARPS * ROW_PER_WARP;
+
+    dim3 block(32, NUM_WARPS);
+    dim3 grid(1, (M + NUM_ROWS - 1) / NUM_ROWS);
+    hgemv_k16_f16_kernel<ROW_PER_WARP>
+        <<<grid, block>>>(reinterpret_cast<half *>(A.data_ptr()),
+                          reinterpret_cast<half *>(x.data_ptr()),
+                          reinterpret_cast<half *>(y.data_ptr()), M, K);
 }

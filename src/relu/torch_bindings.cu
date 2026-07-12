@@ -1,4 +1,4 @@
-#include "relu_launch.cuh"
+#include "relu.cuh"
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     TORCH_BINDING_COMMON_EXTENSION(relu_f32)

@@ -1,23 +1,44 @@
-#include "../common/cuda/cuda_utils.h"
+#pragma once
 
-__global__ void histogram_i32_kernel(int *a, int *y, int N) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < N) {
-        atomicAdd(&(y[a[idx]]), 1);
-    }
+#include "../common/cuda/cuda_utils.h"
+#include "histogram_kernel.cuh"
+
+torch::Tensor histogram_i32(torch::Tensor a) {
+    CHECK_TORCH_TENSOR_DTYPE(a, torch::kInt32)
+    auto options =
+        torch::TensorOptions().dtype(torch::kInt32).device(torch::kCUDA, 0);
+    const int N = a.size(0);
+    std::tuple<torch::Tensor, torch::Tensor> max_a = torch::max(a, 0);
+    torch::Tensor max_val = std::get<0>(max_a).cpu();
+    const int M = max_val.item().to<int>();
+    auto y = torch::zeros({M + 1}, options);
+
+    const int NUM_THREADS_PER_BLOCK = 256;
+    const int NUM_BLOCKS = (N + 256 - 1) / 256;
+    dim3 block(NUM_THREADS_PER_BLOCK);
+    dim3 grid(NUM_BLOCKS);
+    histogram_i32_kernel<<<grid, block>>>(reinterpret_cast<int *>(a.data_ptr()),
+                                          reinterpret_cast<int *>(y.data_ptr()),
+                                          N);
+    return y;
 }
 
-__global__ void histogram_i32x4_kernel(int *a, int *y, int N) {
-    int idx = (blockIdx.x * blockDim.x + threadIdx.x) * 4;
-    if (idx + 4 <= N) {
-        int4 reg_a = INT4(a[idx]);
-        atomicAdd(&(y[reg_a.x]), 1);
-        atomicAdd(&(y[reg_a.y]), 1);
-        atomicAdd(&(y[reg_a.z]), 1);
-        atomicAdd(&(y[reg_a.w]), 1);
-    } else {
-        for (int i = idx; i < N; ++i) {
-            atomicAdd(&(y[a[i]]), 1);
-        }
-    }
+torch::Tensor histogram_i32x4(torch::Tensor a) {
+    CHECK_TORCH_TENSOR_DTYPE(a, torch::kInt32)
+    auto options =
+        torch::TensorOptions().dtype(torch::kInt32).device(torch::kCUDA, 0);
+    const int N = a.size(0);
+    std::tuple<torch::Tensor, torch::Tensor> max_a = torch::max(a, 0);
+    torch::Tensor max_val = std::get<0>(max_a).cpu();
+    const int M = max_val.item().to<int>();
+    auto y = torch::zeros({M + 1}, options);
+
+    const int NUM_THREADS_PER_BLOCK = 64;
+    const int NUM_BLOCKS = (N + 256 - 1) / 256;
+    dim3 block(NUM_THREADS_PER_BLOCK);
+    dim3 grid(NUM_BLOCKS);
+    histogram_i32x4_kernel<<<grid, block>>>(
+        reinterpret_cast<int *>(a.data_ptr()),
+        reinterpret_cast<int *>(y.data_ptr()), N);
+    return y;
 }

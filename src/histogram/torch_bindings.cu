@@ -1,4 +1,4 @@
-#include "histogram_launch.cuh"
+#include "histogram.cuh"
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     TORCH_BINDING_COMMON_EXTENSION(histogram_i32)
