@@ -35,10 +35,17 @@ __global__ void sgemv_k128_f32x4_kernel(float *A, float *x, float *y, int M,
 #pragma unroll
     for (int tile = 0; tile < num_k_tiles; ++tile) {
         int k = (tile * WARP_SIZE + laneId) * 4;
-        float4 reg_x = FLOAT4(x[k]);
-        float4 reg_a = FLOAT4(A[m * K + k]);
-        sum += reg_a.x * reg_x.x + reg_a.y * reg_x.y + reg_a.z * reg_x.z +
-               reg_a.w * reg_x.w;
+        if (k + 3 < K && (K % 4 == 0)) {
+            float4 reg_x = FLOAT4(x[k]);
+            float4 reg_a = FLOAT4(A[m * K + k]);
+            sum += reg_a.x * reg_x.x + reg_a.y * reg_x.y + reg_a.z * reg_x.z +
+                   reg_a.w * reg_x.w;
+        } else {
+            sum += (k + 0 < K) ? A[m * K + k + 0] * x[k + 0] : 0.0f;
+            sum += (k + 1 < K) ? A[m * K + k + 1] * x[k + 1] : 0.0f;
+            sum += (k + 2 < K) ? A[m * K + k + 2] * x[k + 2] : 0.0f;
+            sum += (k + 3 < K) ? A[m * K + k + 3] * x[k + 3] : 0.0f;
+        }
     }
     sum = warp_reduce_sum_f32<WARP_SIZE>(sum);
     if (laneId == 0) {
