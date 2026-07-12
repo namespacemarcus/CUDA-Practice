@@ -7,6 +7,8 @@ THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(THIS_DIR, ".."))
 SRC_DIR = os.path.join(PROJECT_ROOT, "src")
 
+_CUTLASS_INCLUDE = os.path.join(PROJECT_ROOT, "3rd", "cutlass", "include")
+
 _CUDA_FLAGS = [
     "-O3",
     "-U__CUDA_NO_HALF_OPERATORS__",
@@ -16,6 +18,8 @@ _CUDA_FLAGS = [
     "--expt-relaxed-constexpr",
     "--expt-extended-lambda",
     "--use_fast_math",
+    "-std=c++17",
+    f"-I{_CUTLASS_INCLUDE}",
 ]
 _CFLAGS = ["-std=c++17"]
 
