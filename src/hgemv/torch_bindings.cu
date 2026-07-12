@@ -68,3 +68,9 @@ void hgemv_k16_f16(torch::Tensor A, torch::Tensor x, torch::Tensor y) {
                           reinterpret_cast<half *>(x.data_ptr()),
                           reinterpret_cast<half *>(y.data_ptr()), M, K);
 }
+
+PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
+    TORCH_BINDING_COMMON_EXTENSION(hgemv_k32_f16)
+    TORCH_BINDING_COMMON_EXTENSION(hgemv_k128_f16x4)
+    TORCH_BINDING_COMMON_EXTENSION(hgemv_k16_f16)
+}
