@@ -32,6 +32,7 @@ def _ref_attention(q, k, v, causal):
     return F.scaled_dot_product_attention(q, k, v, is_causal=causal)
 
 
+# naive
 @pytest.mark.parametrize("shape", SHAPES)
 @pytest.mark.parametrize("causal", [False, True])
 def test_flash_attention_naive_f32(shape, causal):
@@ -65,3 +66,51 @@ def test_flash_attention_cross_attention(shape):
     out = lib.flash_attention_naive(q, k, v, causal=False)
     ref = _ref_attention(q, k, v, causal=False)
     torch.testing.assert_close(out, ref, rtol=1e-3, atol=1e-5)
+
+
+# kv tiled
+@pytest.mark.parametrize("shape", SHAPES)
+@pytest.mark.parametrize("causal", [False, True])
+def test_flash_attention_kv_tiled_f32(shape, causal):
+    B, H, N, D = shape
+    q = torch.randn(B, H, N, D, device="cuda", dtype=torch.float32).contiguous()
+    k = torch.randn(B, H, N, D, device="cuda", dtype=torch.float32).contiguous()
+    v = torch.randn(B, H, N, D, device="cuda", dtype=torch.float32).contiguous()
+    out = lib.flash_attention_kv_tiled(q, k, v, causal=causal)
+    ref = _ref_attention(q, k, v, causal)
+    torch.testing.assert_close(out, ref, rtol=1e-3, atol=1e-5)
+
+
+@pytest.mark.parametrize("shape", SHAPES)
+@pytest.mark.parametrize("causal", [False, True])
+def test_flash_attention_kv_tiled_f16(shape, causal):
+    B, H, N, D = shape
+    q = torch.randn(B, H, N, D, device="cuda", dtype=torch.float16).contiguous()
+    k = torch.randn(B, H, N, D, device="cuda", dtype=torch.float16).contiguous()
+    v = torch.randn(B, H, N, D, device="cuda", dtype=torch.float16).contiguous()
+    out = lib.flash_attention_kv_tiled(q, k, v, causal=causal)
+    ref = _ref_attention(q, k, v, causal)
+    torch.testing.assert_close(out, ref, rtol=1e-2, atol=1e-3)
+
+
+@pytest.mark.parametrize("shape", CROSS_SHAPES)
+def test_flash_attention_kv_tiled_cross_attention(shape):
+    B, H, Nq, Nkv, D = shape
+    q = torch.randn(B, H, Nq, D, device="cuda", dtype=torch.float32).contiguous()
+    k = torch.randn(B, H, Nkv, D, device="cuda", dtype=torch.float32).contiguous()
+    v = torch.randn(B, H, Nkv, D, device="cuda", dtype=torch.float32).contiguous()
+    out = lib.flash_attention_kv_tiled(q, k, v, causal=False)
+    ref = _ref_attention(q, k, v, causal=False)
+    torch.testing.assert_close(out, ref, rtol=1e-3, atol=1e-5)
+
+
+@pytest.mark.parametrize("shape", SHAPES)
+@pytest.mark.parametrize("causal", [False, True])
+def test_flash_attention_kv_tiled_matches_naive(shape, causal):
+    B, H, N, D = shape
+    q = torch.randn(B, H, N, D, device="cuda", dtype=torch.float32).contiguous()
+    k = torch.randn(B, H, N, D, device="cuda", dtype=torch.float32).contiguous()
+    v = torch.randn(B, H, N, D, device="cuda", dtype=torch.float32).contiguous()
+    out_naive = lib.flash_attention_naive(q, k, v, causal=causal)
+    out_tiled = lib.flash_attention_kv_tiled(q, k, v, causal=causal)
+    torch.testing.assert_close(out_tiled, out_naive, rtol=1e-3, atol=1e-5)
