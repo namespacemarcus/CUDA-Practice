@@ -1,0 +1,8 @@
+repos:
+  - repo: local
+    hooks:
+      - id: format
+        name: format (clang-format + black via tools/format.py)
+        entry: python tools/format.py
+        language: system
+        pass_filenames: false
