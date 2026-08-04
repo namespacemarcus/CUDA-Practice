@@ -24,6 +24,7 @@ FNS = [
     "sgemm_tiling",
     "sgemm_at_tiling",
     "sgemm_at_tiling_bcf_swizzling",
+    "sgemm_at_tiling_bcf_swizzling_cstore",
 ]
 
 
