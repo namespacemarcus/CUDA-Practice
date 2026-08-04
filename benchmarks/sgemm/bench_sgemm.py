@@ -47,7 +47,7 @@ def main():
         print(f"=== M=N=K={n} ===")
         for fn_name in FNS:
             ms = bench(fn_name, n)
-            gflops = 2 * n ** 3 / (ms * 1e-3) / 1e9
+            gflops = 2 * n**3 / (ms * 1e-3) / 1e9
             print(f"  {fn_name:50s} {ms:8.3f} ms  {gflops:8.1f} GFLOPS")
         print()
 
