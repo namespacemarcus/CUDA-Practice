@@ -145,3 +145,34 @@ void sgemm_at_tiling_bcf_swizzling_cstore(torch::Tensor a, torch::Tensor b,
         <<<grid, block, 0, stream>>>(a.data_ptr<float>(), b.data_ptr<float>(),
                                      c.data_ptr<float>(), M, N, K);
 }
+
+void sgemm_at_tiling_bcf_swizzling_cstore_dbf(torch::Tensor a, torch::Tensor b,
+                                              torch::Tensor c) {
+    TORCH_CHECK(a.is_cuda() && a.is_contiguous(),
+                "a must be contiguous CUDA tensor.");
+    TORCH_CHECK(b.is_cuda() && b.is_contiguous(),
+                "b must be contiguous CUDA tensor.");
+    TORCH_CHECK(c.is_cuda() && c.is_contiguous(),
+                "c must be contiguous CUDA tensor.");
+
+    const int M = a.size(0);
+    const int K = a.size(1);
+    const int N = b.size(1);
+    const int BM = 128;
+    const int BN = 128;
+    const int BK = 16;
+    const int TM = 8;
+    const int TN = 8;
+
+    TORCH_CHECK(M % BM == 0, "M must be divisible by 128.");
+    TORCH_CHECK(N % BN == 0, "N must be divisible by 128.");
+    TORCH_CHECK(K % BK == 0, "K must be divisible by 128.");
+
+    const dim3 grid((N + BN - 1) / BN, (M + BM - 1) / BM);
+    const dim3 block(kThreadsPerBlock);
+    cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+
+    sgemm_at_tiling_bcf_swizzling_cstore_dbf_kernel<BM, BN, BK, TM, TN>
+        <<<grid, block, 0, stream>>>(a.data_ptr<float>(), b.data_ptr<float>(),
+                                     c.data_ptr<float>(), M, N, K);
+}

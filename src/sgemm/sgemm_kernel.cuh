@@ -340,3 +340,152 @@ __global__ void sgemm_at_tiling_bcf_swizzling_cstore_kernel(float *a, float *b,
             FLOAT4(sum[i][4]);
     }
 }
+
+template <const int BM = 128, const int BN = 128, const int BK = 16,
+          const int TM = 8, const int TN = 8>
+__global__ void
+sgemm_at_tiling_bcf_swizzling_cstore_dbf_kernel(float *a, float *b, float *c,
+                                                int m, int n, int k) {
+    int tid = threadIdx.x;
+    int warpId = tid / WARP_SIZE;
+    int laneId = tid % WARP_SIZE;
+
+    int load_a_row = tid / 4;
+    int load_a_col = (tid % 4) * 4;
+    int load_b_row = tid / 32;
+    int load_b_col = (tid % 32) * 4;
+
+    int t_row_in_warp = (laneId / 16) * 8;
+
+    int c_row = warpId * 16 + t_row_in_warp;
+    int c_col_base = (laneId % 16) * 4;
+    int c_col_l = c_col_base;
+    int c_col_r = c_col_base + 64;
+
+    __shared__ float As_T[2][BK][BM];
+    __shared__ float Bs[2][BK][BN];
+
+    float sum[TM][TN]{0.0f};
+
+    float *a_ptr = a + (blockIdx.y * BM + load_a_row) * k + load_a_col;
+    float *a_ptr_64 = a + (blockIdx.y * BM + load_a_row + 64) * k + load_a_col;
+    float *b_ptr = b + load_b_row * n + blockIdx.x * BN + load_b_col;
+    float *b_ptr_8 = b + (load_b_row + 8) * n + blockIdx.x * BN + load_b_col;
+
+    // prefetch first tile.
+    float4 tmp_a0 = FLOAT4(a_ptr[0]);
+    float4 tmp_a1 = FLOAT4(a_ptr_64[0]);
+    float4 tmp_b0 = FLOAT4(b_ptr[0]);
+    float4 tmp_b1 = FLOAT4(b_ptr_8[0]);
+
+    As_T[0][load_a_col + 0][swizzle_a(load_a_col + 0, load_a_row)] = tmp_a0.x;
+    As_T[0][load_a_col + 1][swizzle_a(load_a_col + 1, load_a_row)] = tmp_a0.y;
+    As_T[0][load_a_col + 2][swizzle_a(load_a_col + 2, load_a_row)] = tmp_a0.z;
+    As_T[0][load_a_col + 3][swizzle_a(load_a_col + 3, load_a_row)] = tmp_a0.w;
+
+    As_T[0][load_a_col + 0][swizzle_a(load_a_col + 0, load_a_row + 64)] =
+        tmp_a1.x;
+    As_T[0][load_a_col + 1][swizzle_a(load_a_col + 1, load_a_row + 64)] =
+        tmp_a1.y;
+    As_T[0][load_a_col + 2][swizzle_a(load_a_col + 2, load_a_row + 64)] =
+        tmp_a1.z;
+    As_T[0][load_a_col + 3][swizzle_a(load_a_col + 3, load_a_row + 64)] =
+        tmp_a1.w;
+
+    FLOAT4(Bs[0][load_b_row][load_b_col]) = tmp_b0;
+    FLOAT4(Bs[0][load_b_row + 8][load_b_col]) = tmp_b1;
+
+    __syncthreads();
+
+    int write_idx = 1;
+    int read_idx = 0;
+    for (int bk = BK; bk < k; bk += BK) {
+        a_ptr += BK;
+        a_ptr_64 += BK;
+        b_ptr += BK * n;
+        b_ptr_8 += BK * n;
+
+        // prefetch next tile.
+        // after issuing
+        tmp_a0 = FLOAT4(a_ptr[0]);
+        tmp_a1 = FLOAT4(a_ptr_64[0]);
+        tmp_b0 = FLOAT4(b_ptr[0]);
+        tmp_b1 = FLOAT4(b_ptr_8[0]);
+
+#pragma unroll
+        for (int i = 0; i < BK; ++i) {
+            float reg_a[TM], reg_b[TN];
+
+            FLOAT4(reg_a[0]) = FLOAT4(As_T[read_idx][i][swizzle_a(i, c_row)]);
+            FLOAT4(reg_a[4]) =
+                FLOAT4(As_T[read_idx][i][swizzle_a(i, c_row + 4)]);
+
+            FLOAT4(reg_b[0]) = FLOAT4(Bs[read_idx][i][c_col_l]);
+            FLOAT4(reg_b[4]) = FLOAT4(Bs[read_idx][i][c_col_r]);
+
+#pragma unroll
+            for (int m = 0; m < TM; ++m) {
+#pragma unroll
+                for (int n = 0; n < TN; ++n) {
+                    sum[m][n] += reg_a[m] * reg_b[n];
+                }
+            }
+        }
+
+        // computation done.
+        // store prefetched registers into SMEM write buffer.
+        As_T[write_idx][load_a_col + 0][swizzle_a(load_a_col + 0, load_a_row)] =
+            tmp_a0.x;
+        As_T[write_idx][load_a_col + 1][swizzle_a(load_a_col + 1, load_a_row)] =
+            tmp_a0.y;
+        As_T[write_idx][load_a_col + 2][swizzle_a(load_a_col + 2, load_a_row)] =
+            tmp_a0.z;
+        As_T[write_idx][load_a_col + 3][swizzle_a(load_a_col + 3, load_a_row)] =
+            tmp_a0.w;
+
+        As_T[write_idx][load_a_col + 0]
+            [swizzle_a(load_a_col + 0, load_a_row + 64)] = tmp_a1.x;
+        As_T[write_idx][load_a_col + 1]
+            [swizzle_a(load_a_col + 1, load_a_row + 64)] = tmp_a1.y;
+        As_T[write_idx][load_a_col + 2]
+            [swizzle_a(load_a_col + 2, load_a_row + 64)] = tmp_a1.z;
+        As_T[write_idx][load_a_col + 3]
+            [swizzle_a(load_a_col + 3, load_a_row + 64)] = tmp_a1.w;
+
+        FLOAT4(Bs[write_idx][load_b_row][load_b_col]) = tmp_b0;
+        FLOAT4(Bs[write_idx][load_b_row + 8][load_b_col]) = tmp_b1;
+
+        __syncthreads();
+        write_idx ^= 1;
+        read_idx ^= 1;
+    }
+
+#pragma unroll
+    for (int i = 0; i < BK; ++i) {
+        float reg_a[TM], reg_b[TN];
+
+        FLOAT4(reg_a[0]) = FLOAT4(As_T[read_idx][i][swizzle_a(i, c_row)]);
+        FLOAT4(reg_a[4]) = FLOAT4(As_T[read_idx][i][swizzle_a(i, c_row + 4)]);
+
+        FLOAT4(reg_b[0]) = FLOAT4(Bs[read_idx][i][c_col_l]);
+        FLOAT4(reg_b[4]) = FLOAT4(Bs[read_idx][i][c_col_r]);
+
+#pragma unroll
+        for (int m = 0; m < TM; ++m) {
+#pragma unroll
+            for (int n = 0; n < TN; ++n) {
+                sum[m][n] += reg_a[m] * reg_b[n];
+            }
+        }
+    }
+
+#pragma unroll
+    for (int i = 0; i < TM; ++i) {
+        FLOAT4(
+            c[(blockIdx.y * BM + c_row + i) * n + blockIdx.x * BN + c_col_l]) =
+            FLOAT4(sum[i][0]);
+        FLOAT4(
+            c[(blockIdx.y * BM + c_row + i) * n + blockIdx.x * BN + c_col_r]) =
+            FLOAT4(sum[i][4]);
+    }
+}
