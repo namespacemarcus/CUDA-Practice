@@ -433,7 +433,7 @@ template <const int BM = 128, const int BN = 128, const int BK = 32, typename T>
 __global__ void
 hgemm_gw_tiled_bcf_dbf_kernel(const T *__restrict__ A, const T *__restrict__ B,
                               T *__restrict__ C, int M, int N, int K) {
-    int linear_block_id = blockIdx.y * gridDim.y + blockIdx.x;
+    int linear_block_id = blockIdx.y * gridDim.x + blockIdx.x;
     const int SWIZZLE_W = 8;
 
     int bx = ((linear_block_id / (SWIZZLE_W * gridDim.y)) * SWIZZLE_W) +
@@ -658,7 +658,7 @@ __global__ void hgemm_gw_tiled_bcf_dbf_cstore_kernel(const T *__restrict__ A,
                                                      const T *__restrict__ B,
                                                      T *__restrict__ C, int M,
                                                      int N, int K) {
-    int linear_block_id = blockIdx.y * gridDim.y + blockIdx.x;
+    int linear_block_id = blockIdx.y * gridDim.x + blockIdx.x;
     const int SWIZZLE_W = 8;
 
     int bx = ((linear_block_id / (SWIZZLE_W * gridDim.y)) * SWIZZLE_W) +
