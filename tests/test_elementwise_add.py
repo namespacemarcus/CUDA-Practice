@@ -9,7 +9,7 @@ pytestmark = pytest.mark.skipif(
 lib = load_op(
     name="elementwise_add_lib",
     op_subdir="elementwise",
-    sources=["elementwise_add.cu", "torch_bindings.cu"],
+    sources=["elementwise_add_kernel.cu", "torch_bindings.cu"],
 )
 
 
