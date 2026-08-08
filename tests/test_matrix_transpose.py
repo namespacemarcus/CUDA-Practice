@@ -29,6 +29,8 @@ SMALL_SHAPES = [
 ALL_FNS = [
     "matrix_transpose_f32_loadcoal",
     "matrix_transpose_f32x4_loadcoal",
+    "matrix_transpose_f32x4_loadcoal_smem",
+    "matrix_transpose_f32x4_loadcoal_smem_bcf",
     "matrix_transpose_f32_loadcoal_2d",
     "matrix_transpose_f32x4_loadcoal_2d",
 ]
