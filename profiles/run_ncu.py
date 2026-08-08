@@ -9,7 +9,17 @@ import torch
 from conftest import load_op
 
 
-def run(op_subdir, lib_name, sources, kernel_filter, make_input, call, fns, report, metric_set="full"):
+def run(
+    op_subdir,
+    lib_name,
+    sources,
+    kernel_filter,
+    make_input,
+    call,
+    fns,
+    report,
+    metric_set="full",
+):
     if "--target" in sys.argv:
         lib = load_op(name=lib_name, op_subdir=op_subdir, sources=sources)
         inp = make_input()
