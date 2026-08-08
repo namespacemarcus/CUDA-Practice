@@ -130,3 +130,5 @@ debug_dump/
 .env.*.local
 pyproject.toml.local
 setup.cfg.local
+
+.claude/
