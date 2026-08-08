@@ -8,7 +8,7 @@ import sys
 
 def collect_files(base_path, extensions):
     files = []
-    for sub in ("src", "tests", "benchmarks"):
+    for sub in ("src", "tests", "profiles", "benchmarks"):
         root = os.path.join(base_path, sub)
         if not os.path.isdir(root):
             continue
