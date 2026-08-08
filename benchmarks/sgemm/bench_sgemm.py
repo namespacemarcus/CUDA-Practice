@@ -1,11 +1,9 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "tests"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-import torch
-
-from conftest import load_op
+from bench_utils import gflops, load_op, print_row, time_ms, torch
 
 lib = load_op(name="sgemm_lib", op_subdir="sgemm", sources=["torch_bindings.cu"])
 
@@ -20,8 +18,6 @@ FNS = [
     "sgemm_cublas_tf32",
 ]
 SHAPES = [128, 256, 512, 1024, 2048, 4096]
-WARMUP = 3
-ITERS = 10
 
 
 def bench(fn_name, n):
@@ -29,26 +25,16 @@ def bench(fn_name, n):
     b = torch.randn(n, n, device="cuda", dtype=torch.float32).contiguous()
     c = torch.zeros(n, n, device="cuda", dtype=torch.float32).contiguous()
     fn = getattr(lib, fn_name)
-    for _ in range(WARMUP):
-        fn(a, b, c)
-    torch.cuda.synchronize()
-    start = torch.cuda.Event(enable_timing=True)
-    end = torch.cuda.Event(enable_timing=True)
-    start.record()
-    for _ in range(ITERS):
-        fn(a, b, c)
-    end.record()
-    torch.cuda.synchronize()
-    return start.elapsed_time(end) / ITERS
+    ms = time_ms(fn, a, b, c)
+    return ms, gflops(2 * n**3, ms)
 
 
 def main():
     for n in SHAPES:
         print(f"=== M=N=K={n} ===")
         for fn_name in FNS:
-            ms = bench(fn_name, n)
-            gflops = 2 * n**3 / (ms * 1e-3) / 1e9
-            print(f"  {fn_name:50s} {ms:8.3f} ms  {gflops:8.1f} GFLOPS")
+            ms, flops = bench(fn_name, n)
+            print_row(fn_name, ms, flops, unit="GFLOPS")
         print()
 
 
