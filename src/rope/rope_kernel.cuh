@@ -1,4 +1,4 @@
-#include "../common/cuda/cuda_utils.h"
+#include "../common/pack.h"
 
 #define theta 10000.0f
 

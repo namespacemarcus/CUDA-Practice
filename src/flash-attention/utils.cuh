@@ -1,4 +1,5 @@
-#include "../common/cuda/cuda_utils.h"
+#include "../common/defs.h"
+#include "../common/tensor_utils.h"
 #include <cuda_fp16.h>
 
 template <typename scalar_t>

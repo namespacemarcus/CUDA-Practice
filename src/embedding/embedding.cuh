@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../common/cuda/cuda_utils.h"
+#include "../common/tensor_utils.h"
 #include "embedding_kernel.cuh"
 #include <torch/extension.h>
 #include <torch/types.h>

@@ -1,4 +1,4 @@
-#include "../common/cuda/cuda_utils.h"
+#include "../common/defs.h"
 
 template <const int kWarpSize = WARP_SIZE>
 __device__ __forceinline__ float warp_reduce_sum_f32(float val) {

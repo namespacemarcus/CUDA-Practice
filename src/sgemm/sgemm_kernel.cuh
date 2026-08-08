@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../common/cuda/cuda_utils.h"
+#include "../common/defs.h"
+#include "../common/pack.h"
 
 __device__ __forceinline__ int swizzle_a(int x, int y) {
     return y ^ ((x >> 2) << 3);

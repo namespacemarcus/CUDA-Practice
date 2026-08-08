@@ -1,3 +1,5 @@
+#include "../common/defs.h"
+#include "../common/pack.h"
 #include "reduce.cuh"
 
 // block(32, 4), grid(1, M/4)

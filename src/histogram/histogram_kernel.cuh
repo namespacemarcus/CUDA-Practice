@@ -1,4 +1,4 @@
-#include "../common/cuda/cuda_utils.h"
+#include "../common/pack.h"
 
 __global__ void histogram_i32_kernel(int *a, int *y, int N) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;

@@ -1,3 +1,4 @@
+#include "../common/tensor_utils.h"
 #include "cublas_v2.h"
 #include <ATen/cuda/CUDABlas.h>
 #include <ATen/cuda/CUDAContext.h>
@@ -30,11 +31,12 @@ void sgemm_cublas_launch(float *A, float *B, float *C, size_t M, size_t N,
 }
 
 void sgemm_cublas(torch::Tensor a, torch::Tensor b, torch::Tensor c) {
-    TORCH_CHECK(a.is_cuda() && b.is_cuda() && c.is_cuda(),
-                "All tensors must be on CUDA");
-    TORCH_CHECK(a.is_contiguous(), "Tensor A must be contiguous");
-    TORCH_CHECK(b.is_contiguous(), "Tensor B must be contiguous");
-    TORCH_CHECK(c.is_contiguous(), "Tensor C must be contiguous");
+    CHECK_CUDA(a);
+    CHECK_CUDA(b);
+    CHECK_CUDA(c);
+    CHECK_CONTIGUOUS(a);
+    CHECK_CONTIGUOUS(b);
+    CHECK_CONTIGUOUS(c);
 
     const int M = a.size(0);
     const int K = a.size(1);
@@ -45,11 +47,12 @@ void sgemm_cublas(torch::Tensor a, torch::Tensor b, torch::Tensor c) {
 }
 
 void sgemm_cublas_tf32(torch::Tensor a, torch::Tensor b, torch::Tensor c) {
-    TORCH_CHECK(a.is_cuda() && b.is_cuda() && c.is_cuda(),
-                "All tensors must be on CUDA");
-    TORCH_CHECK(a.is_contiguous(), "Tensor A must be contiguous");
-    TORCH_CHECK(b.is_contiguous(), "Tensor B must be contiguous");
-    TORCH_CHECK(c.is_contiguous(), "Tensor C must be contiguous");
+    CHECK_CUDA(a);
+    CHECK_CUDA(b);
+    CHECK_CUDA(c);
+    CHECK_CONTIGUOUS(a);
+    CHECK_CONTIGUOUS(b);
+    CHECK_CONTIGUOUS(c);
 
     const int M = a.size(0);
     const int K = a.size(1);

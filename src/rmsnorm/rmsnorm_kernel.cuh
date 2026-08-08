@@ -1,3 +1,4 @@
+#include "../common/pack.h"
 #include "reduce.cuh"
 
 template <const int NUM_THREADS = 256>

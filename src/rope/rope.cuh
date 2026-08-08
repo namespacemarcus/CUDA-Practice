@@ -1,3 +1,4 @@
+#include "../common/tensor_utils.h"
 #include "rope_kernel.cuh"
 
 #define BLOCK_SIZE 256

@@ -1,17 +1,15 @@
 #pragma once
 
+#include "../common/tensor_utils.h"
 #include "hgemm_kernel.cuh"
 #include <ATen/cuda/CUDAContext.h>
 
 constexpr int kThreadsPerBlock = 256;
 
 void hgemm_tiled(torch::Tensor a, torch::Tensor b, torch::Tensor c) {
-    TORCH_CHECK(a.is_cuda() && a.is_contiguous(),
-                "a must be contiguous CUDA tensor.");
-    TORCH_CHECK(b.is_cuda() && b.is_contiguous(),
-                "b must be contiguous CUDA tensor.");
-    TORCH_CHECK(c.is_cuda() && c.is_contiguous(),
-                "c must be contiguous CUDA tensor.");
+    CHECK_CUDA_CONTIGUOUS(a);
+    CHECK_CUDA_CONTIGUOUS(b);
+    CHECK_CUDA_CONTIGUOUS(c);
 
     const int M = a.size(0);
     const int K = a.size(1);
@@ -38,12 +36,9 @@ void hgemm_tiled(torch::Tensor a, torch::Tensor b, torch::Tensor c) {
 }
 
 void hgemm_gw_tiled(torch::Tensor a, torch::Tensor b, torch::Tensor c) {
-    TORCH_CHECK(a.is_cuda() && a.is_contiguous(),
-                "a must be contiguous CUDA tensor.");
-    TORCH_CHECK(b.is_cuda() && b.is_contiguous(),
-                "b must be contiguous CUDA tensor.");
-    TORCH_CHECK(c.is_cuda() && c.is_contiguous(),
-                "c must be contiguous CUDA tensor.");
+    CHECK_CUDA_CONTIGUOUS(a);
+    CHECK_CUDA_CONTIGUOUS(b);
+    CHECK_CUDA_CONTIGUOUS(c);
 
     const int M = a.size(0);
     const int K = a.size(1);
@@ -70,12 +65,9 @@ void hgemm_gw_tiled(torch::Tensor a, torch::Tensor b, torch::Tensor c) {
 }
 
 void hgemm_gw_tiled_bcf(torch::Tensor a, torch::Tensor b, torch::Tensor c) {
-    TORCH_CHECK(a.is_cuda() && a.is_contiguous(),
-                "a must be contiguous CUDA tensor.");
-    TORCH_CHECK(b.is_cuda() && b.is_contiguous(),
-                "b must be contiguous CUDA tensor.");
-    TORCH_CHECK(c.is_cuda() && c.is_contiguous(),
-                "c must be contiguous CUDA tensor.");
+    CHECK_CUDA_CONTIGUOUS(a);
+    CHECK_CUDA_CONTIGUOUS(b);
+    CHECK_CUDA_CONTIGUOUS(c);
 
     const int M = a.size(0);
     const int K = a.size(1);
@@ -102,12 +94,9 @@ void hgemm_gw_tiled_bcf(torch::Tensor a, torch::Tensor b, torch::Tensor c) {
 }
 
 void hgemm_gw_tiled_bcf_dbf(torch::Tensor a, torch::Tensor b, torch::Tensor c) {
-    TORCH_CHECK(a.is_cuda() && a.is_contiguous(),
-                "a must be contiguous CUDA tensor.");
-    TORCH_CHECK(b.is_cuda() && b.is_contiguous(),
-                "b must be contiguous CUDA tensor.");
-    TORCH_CHECK(c.is_cuda() && c.is_contiguous(),
-                "c must be contiguous CUDA tensor.");
+    CHECK_CUDA_CONTIGUOUS(a);
+    CHECK_CUDA_CONTIGUOUS(b);
+    CHECK_CUDA_CONTIGUOUS(c);
 
     const int M = a.size(0);
     const int K = a.size(1);
@@ -135,12 +124,9 @@ void hgemm_gw_tiled_bcf_dbf(torch::Tensor a, torch::Tensor b, torch::Tensor c) {
 
 void hgemm_gw_tiled_bcf_dbf_cstore(torch::Tensor a, torch::Tensor b,
                                    torch::Tensor c) {
-    TORCH_CHECK(a.is_cuda() && a.is_contiguous(),
-                "a must be contiguous CUDA tensor.");
-    TORCH_CHECK(b.is_cuda() && b.is_contiguous(),
-                "b must be contiguous CUDA tensor.");
-    TORCH_CHECK(c.is_cuda() && c.is_contiguous(),
-                "c must be contiguous CUDA tensor.");
+    CHECK_CUDA_CONTIGUOUS(a);
+    CHECK_CUDA_CONTIGUOUS(b);
+    CHECK_CUDA_CONTIGUOUS(c);
 
     const int M = a.size(0);
     const int K = a.size(1);

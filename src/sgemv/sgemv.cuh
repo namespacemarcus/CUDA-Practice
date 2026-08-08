@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../common/cuda/cuda_utils.h"
+#include "../common/defs.h"
+#include "../common/tensor_utils.h"
 #include "sgemv_kernel.cuh"
 
 void sgemv_k32_f32(torch::Tensor A, torch::Tensor x, torch::Tensor y) {

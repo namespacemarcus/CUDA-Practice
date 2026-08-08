@@ -1,3 +1,4 @@
+#include "../common/pack.h"
 #include "reduce.cuh"
 #include <cuda_fp16.h>
 

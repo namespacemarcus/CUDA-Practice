@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../common/cuda/cuda_utils.h"
+#include "../common/tensor_utils.h"
 #include "swish_kernel.cuh"
 
 #define TORCH_BINDING_SWISH(packed_type, th_type, element_type, n_elements)    \

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../common/cuda/cuda_utils.h"
+#include "../common/tensor_utils.h"
 #include "histogram_kernel.cuh"
 
 torch::Tensor histogram_i32(torch::Tensor a) {

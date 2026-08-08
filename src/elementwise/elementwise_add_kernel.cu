@@ -1,4 +1,4 @@
-#include "../common/cuda/cuda_utils.h"
+#include "../common/pack.h"
 #include "elementwise_add_kernel.cuh"
 
 __global__ void elementwise_add_f32_kernel(float *a, float *b, float *c,

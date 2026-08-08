@@ -1,7 +1,7 @@
 #include "sgemv.cuh"
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-    TORCH_BINDING_COMMON_EXTENSION(sgemv_k32_f32)
-    TORCH_BINDING_COMMON_EXTENSION(sgemv_k128_f32x4)
-    TORCH_BINDING_COMMON_EXTENSION(sgemv_k16_f32)
+    m.def("sgemv_k32_f32", &sgemv_k32_f32, "sgemv_k32_f32");
+    m.def("sgemv_k128_f32x4", &sgemv_k128_f32x4, "sgemv_k128_f32x4");
+    m.def("sgemv_k16_f32", &sgemv_k16_f32, "sgemv_k16_f32");
 }

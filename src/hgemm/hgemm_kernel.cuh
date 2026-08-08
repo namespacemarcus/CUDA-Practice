@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../common/cuda/cuda_utils.h"
+#include "../common/defs.h"
+#include "../common/pack.h"
 #include <cuda_bf16.h>
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>

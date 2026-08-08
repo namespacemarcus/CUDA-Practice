@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../common/cuda/cuda_utils.h"
+#include "../common/tensor_utils.h"
 #include "dot_product_kernel.cuh"
 
 #define LAUNCH_DOT_PRODUCT_KERNEL(NT, packed_type, acc_type, element_type)     \

@@ -1,4 +1,4 @@
-#include "../common/cuda/cuda_utils.h"
+#include "../common/defs.h"
 
 struct __align__(8) MD {
     float m; // current partial max

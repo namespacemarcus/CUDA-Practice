@@ -1,4 +1,4 @@
-#include "../common/cuda/cuda_utils.h"
+#include "../common/pack.h"
 #include <cuda_fp16.h>
 
 __device__ __forceinline__ float swish(float x) {

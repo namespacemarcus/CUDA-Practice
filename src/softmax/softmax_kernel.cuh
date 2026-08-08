@@ -1,4 +1,5 @@
 
+#include "../common/pack.h"
 #include "reduce.cuh"
 
 // x: (s, d), y: (s, d)

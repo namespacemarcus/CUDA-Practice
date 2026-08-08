@@ -1,16 +1,13 @@
 #pragma once
 
-#include "../common/cuda/cuda_utils.h"
+#include "../common/tensor_utils.h"
 #include "sgemm_kernel.cuh"
 #include <ATen/cuda/CUDAContext.h>
 
 void sgemm_naive(torch::Tensor a, torch::Tensor b, torch::Tensor c) {
-    TORCH_CHECK(a.is_cuda() && a.is_contiguous(),
-                "a must be contiguous CUDA tensor.");
-    TORCH_CHECK(b.is_cuda() && b.is_contiguous(),
-                "b must be contiguous CUDA tensor.");
-    TORCH_CHECK(c.is_cuda() && c.is_contiguous(),
-                "c must be contiguous CUDA tensor.");
+    CHECK_CUDA_CONTIGUOUS(a);
+    CHECK_CUDA_CONTIGUOUS(b);
+    CHECK_CUDA_CONTIGUOUS(c);
 
     const int M = a.size(0);
     const int K = a.size(1);
@@ -27,12 +24,9 @@ void sgemm_naive(torch::Tensor a, torch::Tensor b, torch::Tensor c) {
 constexpr int kThreadsPerBlock = 256;
 
 void sgemm_tiling(torch::Tensor a, torch::Tensor b, torch::Tensor c) {
-    TORCH_CHECK(a.is_cuda() && a.is_contiguous(),
-                "a must be contiguous CUDA tensor.");
-    TORCH_CHECK(b.is_cuda() && b.is_contiguous(),
-                "b must be contiguous CUDA tensor.");
-    TORCH_CHECK(c.is_cuda() && c.is_contiguous(),
-                "c must be contiguous CUDA tensor.");
+    CHECK_CUDA_CONTIGUOUS(a);
+    CHECK_CUDA_CONTIGUOUS(b);
+    CHECK_CUDA_CONTIGUOUS(c);
 
     const int M = a.size(0);
     const int K = a.size(1);
@@ -56,12 +50,9 @@ void sgemm_tiling(torch::Tensor a, torch::Tensor b, torch::Tensor c) {
 }
 
 void sgemm_at_tiling(torch::Tensor a, torch::Tensor b, torch::Tensor c) {
-    TORCH_CHECK(a.is_cuda() && a.is_contiguous(),
-                "a must be contiguous CUDA tensor.");
-    TORCH_CHECK(b.is_cuda() && b.is_contiguous(),
-                "b must be contiguous CUDA tensor.");
-    TORCH_CHECK(c.is_cuda() && c.is_contiguous(),
-                "c must be contiguous CUDA tensor.");
+    CHECK_CUDA_CONTIGUOUS(a);
+    CHECK_CUDA_CONTIGUOUS(b);
+    CHECK_CUDA_CONTIGUOUS(c);
 
     const int M = a.size(0);
     const int K = a.size(1);
@@ -86,12 +77,9 @@ void sgemm_at_tiling(torch::Tensor a, torch::Tensor b, torch::Tensor c) {
 
 void sgemm_at_tiling_bcf_swizzling(torch::Tensor a, torch::Tensor b,
                                    torch::Tensor c) {
-    TORCH_CHECK(a.is_cuda() && a.is_contiguous(),
-                "a must be contiguous CUDA tensor.");
-    TORCH_CHECK(b.is_cuda() && b.is_contiguous(),
-                "b must be contiguous CUDA tensor.");
-    TORCH_CHECK(c.is_cuda() && c.is_contiguous(),
-                "c must be contiguous CUDA tensor.");
+    CHECK_CUDA_CONTIGUOUS(a);
+    CHECK_CUDA_CONTIGUOUS(b);
+    CHECK_CUDA_CONTIGUOUS(c);
 
     const int M = a.size(0);
     const int K = a.size(1);
@@ -117,12 +105,9 @@ void sgemm_at_tiling_bcf_swizzling(torch::Tensor a, torch::Tensor b,
 
 void sgemm_at_tiling_bcf_swizzling_cstore(torch::Tensor a, torch::Tensor b,
                                           torch::Tensor c) {
-    TORCH_CHECK(a.is_cuda() && a.is_contiguous(),
-                "a must be contiguous CUDA tensor.");
-    TORCH_CHECK(b.is_cuda() && b.is_contiguous(),
-                "b must be contiguous CUDA tensor.");
-    TORCH_CHECK(c.is_cuda() && c.is_contiguous(),
-                "c must be contiguous CUDA tensor.");
+    CHECK_CUDA_CONTIGUOUS(a);
+    CHECK_CUDA_CONTIGUOUS(b);
+    CHECK_CUDA_CONTIGUOUS(c);
 
     const int M = a.size(0);
     const int K = a.size(1);
@@ -148,12 +133,9 @@ void sgemm_at_tiling_bcf_swizzling_cstore(torch::Tensor a, torch::Tensor b,
 
 void sgemm_at_tiling_bcf_swizzling_cstore_dbf(torch::Tensor a, torch::Tensor b,
                                               torch::Tensor c) {
-    TORCH_CHECK(a.is_cuda() && a.is_contiguous(),
-                "a must be contiguous CUDA tensor.");
-    TORCH_CHECK(b.is_cuda() && b.is_contiguous(),
-                "b must be contiguous CUDA tensor.");
-    TORCH_CHECK(c.is_cuda() && c.is_contiguous(),
-                "c must be contiguous CUDA tensor.");
+    CHECK_CUDA_CONTIGUOUS(a);
+    CHECK_CUDA_CONTIGUOUS(b);
+    CHECK_CUDA_CONTIGUOUS(c);
 
     const int M = a.size(0);
     const int K = a.size(1);

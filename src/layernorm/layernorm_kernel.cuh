@@ -1,3 +1,4 @@
+#include "../common/pack.h"
 #include "reduce.cuh"
 
 // x, y: s*d

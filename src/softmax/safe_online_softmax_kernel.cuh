@@ -1,3 +1,5 @@
+#include "../common/defs.h"
+#include "../common/pack.h"
 #include "online_reduce.cuh"
 #include <float.h>
 

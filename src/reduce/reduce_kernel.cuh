@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../common/defs.h"
+#include "../common/pack.h"
 #include "warp_reduce.cuh"
 
 // grid(N/256), block(256)

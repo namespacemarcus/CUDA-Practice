@@ -1,3 +1,5 @@
+#include "../common/defs.h"
+#include "../common/pack.h"
 #include "reduce.cuh"
 
 __global__ void hgemv_k32_f16_kernel(half *A, half *x, half *y, int M, int K) {

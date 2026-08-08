@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../common/cuda/cuda_utils.h"
+#include "../common/defs.h"
 #include <float.h>
 
 template <const int kWarpSize = WARP_SIZE>

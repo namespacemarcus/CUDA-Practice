@@ -24,3 +24,13 @@
             throw std::runtime_error("Tensor size mismatch!");                 \
         }                                                                      \
     }
+
+#define CHECK_CUDA(T)                                                          \
+    TORCH_CHECK((T).is_cuda(), #T " must be a CUDA tensor")
+
+#define CHECK_CONTIGUOUS(T)                                                    \
+    TORCH_CHECK((T).is_contiguous(), #T " must be contiguous")
+
+#define CHECK_CUDA_CONTIGUOUS(T)                                               \
+    TORCH_CHECK((T).is_cuda() && (T).is_contiguous(),                          \
+                #T " must be a contiguous CUDA tensor")

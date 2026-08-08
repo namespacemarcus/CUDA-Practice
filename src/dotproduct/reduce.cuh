@@ -1,4 +1,4 @@
-#include "../common/cuda/cuda_utils.h"
+#include "../common/defs.h"
 #include <cuda_fp16.h>
 
 template <const int kWarpSize = WARP_SIZE>

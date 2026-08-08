@@ -1,4 +1,5 @@
-#include "flash_attention_kernel.cuh"
+#include "../common/tensor_utils.h"
+#include "flash_attention_naive_kernel.cuh"
 #include <c10/cuda/CUDAGuard.h>
 #include <torch/extension.h>
 
@@ -13,17 +14,18 @@ struct AttentionShape {
 AttentionShape check_attention_inputs(const torch::Tensor &query,
                                       const torch::Tensor &key,
                                       const torch::Tensor &value) {
-    TORCH_CHECK(query.is_cuda() && key.is_cuda() && value.is_cuda(),
-                "Q, K, V must all be CUDA tensors");
+    CHECK_CUDA(query);
+    CHECK_CUDA(key);
+    CHECK_CUDA(value);
     TORCH_CHECK(query.device() == key.device() &&
                     query.device() == value.device(),
                 "Q, K, V must be on the same CUDA device");
     TORCH_CHECK(
         query.dim() == 4 && key.dim() == 4 && value.dim() == 4,
         "Q, K, V must be 4-dimensional tensors with layout [B, H, N, D]");
-    TORCH_CHECK(query.is_contiguous() && key.is_contiguous() &&
-                    value.is_contiguous(),
-                "Q, K, V must be contiguous");
+    CHECK_CONTIGUOUS(query);
+    CHECK_CONTIGUOUS(key);
+    CHECK_CONTIGUOUS(value);
     TORCH_CHECK(query.scalar_type() == key.scalar_type() &&
                     query.scalar_type() == value.scalar_type(),
                 "Q, K, V must have the same scalar type");

@@ -1,4 +1,4 @@
-#include "../common/cuda/cuda_utils.h"
+#include "../common/pack.h"
 #include <cuda_fp16.h>
 
 #define ALPHA 1.0f

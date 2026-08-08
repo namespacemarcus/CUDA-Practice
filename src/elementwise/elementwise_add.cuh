@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../common/cuda/cuda_utils.h"
+#include "../common/tensor_utils.h"
 #include "elementwise_add_kernel.cuh"
 #include <cuda_runtime.h>
 #include <iostream>
