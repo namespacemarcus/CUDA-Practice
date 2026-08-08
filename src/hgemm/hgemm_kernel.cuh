@@ -55,6 +55,128 @@
                    "f"(C0), "f"(C1), "f"(C2), "f"(C3))
 
 template <const int BM = 128, const int BN = 128, const int BK = 32, typename T>
+__global__ void hgemm_tiled_kernel(const T *__restrict__ A,
+                                   const T *__restrict__ B, T *__restrict__ C,
+                                   int M, int N, int K) {
+    int bx = blockIdx.x;
+    int by = blockIdx.y;
+
+    int tid = threadIdx.x;
+    int warpId = tid / WARP_SIZE;
+    int laneId = tid % WARP_SIZE;
+
+    int load_a_row = tid / 4;
+    int load_a_col = (tid % 4) * 8;
+    int load_b_row = tid / 16;
+    int load_b_col = (tid % 16) * 8;
+
+    __shared__ T As[BM][BK];
+    __shared__ T Bs[BK][BN];
+
+    int warp_row = warpId / 4; // 0, 1
+    int warp_col = warpId % 4; // 0, 1, 2, 3
+
+    float sum[4][4][4]{0.0f};
+
+    for (int bk = 0; bk < K; bk += BK) {
+        uint32_t smem_a0 = static_cast<uint32_t>(
+            __cvta_generic_to_shared(&As[load_a_row][load_a_col]));
+        uint32_t smem_a1 = static_cast<uint32_t>(
+            __cvta_generic_to_shared(&As[load_a_row + 64][load_a_col]));
+
+        const T *global_a0 = &A[(by * BM + load_a_row) * K + bk + load_a_col];
+        const T *global_a1 =
+            &A[(by * BM + load_a_row + 64) * K + bk + load_a_col];
+
+        CP_ASYNC_CG(smem_a0, global_a0);
+        CP_ASYNC_CG(smem_a1, global_a1);
+
+        uint32_t smem_b0 = static_cast<uint32_t>(
+            __cvta_generic_to_shared(&Bs[load_b_row][load_b_col]));
+        uint32_t smem_b1 = static_cast<uint32_t>(
+            __cvta_generic_to_shared(&Bs[load_b_row + 16][load_b_col]));
+
+        const T *global_b0 = &B[(bk + load_b_row) * N + bx * BN + load_b_col];
+        const T *global_b1 =
+            &B[(bk + load_b_row + 16) * N + bx * BN + load_b_col];
+
+        CP_ASYNC_CG(smem_b0, global_b0);
+        CP_ASYNC_CG(smem_b1, global_b1);
+
+        CP_ASYNC_COMMIT_GROUP();
+        CP_ASYNC_WAIT_GROUP_0();
+        __syncthreads();
+
+#pragma unroll
+        for (int k_step = 0; k_step < 2; ++k_step) {
+            int k_offset = k_step * 16;
+
+            uint32_t reg_a[4][4];
+            uint32_t reg_b[4][2];
+
+#pragma unroll
+            for (int m = 0; m < 4; ++m) {
+                int a_row = warp_row * 64 + m * 16 + (laneId % 16);
+                int a_col = k_offset + (laneId / 16) * 8;
+                uint32_t smem_addr = static_cast<uint32_t>(
+                    __cvta_generic_to_shared(&As[a_row][a_col]));
+                LDMATRIX_X4(reg_a[m][0], reg_a[m][1], reg_a[m][2], reg_a[m][3],
+                            smem_addr);
+            }
+
+#pragma unroll
+            for (int n = 0; n < 4; ++n) {
+                int b_row = k_offset + (laneId % 16);
+                int b_col = warp_col * 32 + n * 8;
+                uint32_t smem_addr = static_cast<uint32_t>(
+                    __cvta_generic_to_shared(&Bs[b_row][b_col]));
+                LDMATRIX_X2_TRANS(reg_b[n][0], reg_b[n][1], smem_addr);
+            }
+
+#pragma unroll
+            for (int m = 0; m < 4; ++m) {
+#pragma unroll
+                for (int n = 0; n < 4; ++n) {
+                    if constexpr (std::is_same_v<T, __half>) {
+                        M16N8K16_F16(sum[m][n][0], sum[m][n][1], sum[m][n][2],
+                                     sum[m][n][3], reg_a[m][0], reg_a[m][1],
+                                     reg_a[m][2], reg_a[m][3], reg_b[n][0],
+                                     reg_b[n][1]);
+                    } else {
+                        M16N8K16_BF16(sum[m][n][0], sum[m][n][1], sum[m][n][2],
+                                      sum[m][n][3], reg_a[m][0], reg_a[m][1],
+                                      reg_a[m][2], reg_a[m][3], reg_b[n][0],
+                                      reg_b[n][1]);
+                    }
+                }
+            }
+        }
+        __syncthreads();
+    }
+
+    int t_row = laneId / 4;       // 0~7
+    int t_col = (laneId % 4) * 2; // 0, 2, 4, 6
+#pragma unroll
+    for (int m = 0; m < 4; ++m) {
+#pragma unroll
+        for (int n = 0; n < 4; ++n) {
+            int c_base_row = by * BM + warp_row * 64 + m * 16;
+            int c_base_col = bx * BN + warp_col * 32 + n * 8;
+            int idx_0 = (c_base_row + t_row) * N + c_base_col + t_col;
+            int idx_2 = (c_base_row + t_row + 8) * N + c_base_col + t_col;
+
+            if constexpr (std::is_same_v<T, __half>) {
+                HALF2(C[idx_0]) = __float22half2_rn(FLOAT2(sum[m][n][0]));
+                HALF2(C[idx_2]) = __float22half2_rn(FLOAT2(sum[m][n][2]));
+            } else {
+                BFLOAT2(C[idx_0]) = __float22bfloat162_rn(FLOAT2(sum[m][n][0]));
+                BFLOAT2(C[idx_2]) = __float22bfloat162_rn(FLOAT2(sum[m][n][2]));
+            }
+        }
+    }
+}
+
+template <const int BM = 128, const int BN = 128, const int BK = 32, typename T>
 __global__ void hgemm_gw_tiled_kernel(const T *__restrict__ A,
                                       const T *__restrict__ B,
                                       T *__restrict__ C, int M, int N, int K) {
@@ -120,7 +242,6 @@ __global__ void hgemm_gw_tiled_kernel(const T *__restrict__ A,
 
 #pragma unroll
             for (int m = 0; m < 4; ++m) {
-                // 分 4 组 load，每组 16x16
                 int a_row = warp_row * 64 + m * 16 + (laneId % 16);
                 int a_col =
                     k_offset + (laneId / 16) * 8; // k_step = 0: a_col = 0/8

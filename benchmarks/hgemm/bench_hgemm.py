@@ -10,6 +10,7 @@ from conftest import load_op
 lib = load_op(name="hgemm_lib", op_subdir="hgemm", sources=["torch_bindings.cu"])
 
 FNS = [
+    "hgemm_tiled",
     "hgemm_gw_tiled",
     "hgemm_gw_tiled_bcf",
     "hgemm_gw_tiled_bcf_dbf",

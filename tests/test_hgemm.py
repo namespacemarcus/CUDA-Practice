@@ -22,6 +22,7 @@ SHAPES = [
 ]
 
 FNS = [
+    "hgemm_tiled",
     "hgemm_gw_tiled",
     "hgemm_gw_tiled_bcf",
     "hgemm_gw_tiled_bcf_dbf",
