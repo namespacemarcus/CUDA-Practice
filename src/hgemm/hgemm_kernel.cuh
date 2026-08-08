@@ -55,7 +55,9 @@
                    "f"(C0), "f"(C1), "f"(C2), "f"(C3))
 
 template <const int BM = 128, const int BN = 128, const int BK = 32, typename T>
-__global__ void hgemm_gw_tiled_kernel(T *A, T *B, T *C, int M, int N, int K) {
+__global__ void hgemm_gw_tiled_kernel(const T *__restrict__ A,
+                                      const T *__restrict__ B,
+                                      T *__restrict__ C, int M, int N, int K) {
     int linear_block_id = blockIdx.y * gridDim.x + blockIdx.x;
     const int SWIZZLE_W = 8;
 
@@ -86,8 +88,9 @@ __global__ void hgemm_gw_tiled_kernel(T *A, T *B, T *C, int M, int N, int K) {
         uint32_t smem_a1 = static_cast<uint32_t>(
             __cvta_generic_to_shared(&As[load_a_row + 64][load_a_col]));
 
-        T *global_a0 = &A[(by * BM + load_a_row) * K + bk + load_a_col];
-        T *global_a1 = &A[(by * BM + load_a_row + 64) * K + bk + load_a_col];
+        const T *global_a0 = &A[(by * BM + load_a_row) * K + bk + load_a_col];
+        const T *global_a1 =
+            &A[(by * BM + load_a_row + 64) * K + bk + load_a_col];
 
         CP_ASYNC_CG(smem_a0, global_a0);
         CP_ASYNC_CG(smem_a1, global_a1);
@@ -97,8 +100,9 @@ __global__ void hgemm_gw_tiled_kernel(T *A, T *B, T *C, int M, int N, int K) {
         uint32_t smem_b1 = static_cast<uint32_t>(
             __cvta_generic_to_shared(&Bs[load_b_row + 16][load_b_col]));
 
-        T *global_b0 = &B[(bk + load_b_row) * N + bx * BN + load_b_col];
-        T *global_b1 = &B[(bk + load_b_row + 16) * N + bx * BN + load_b_col];
+        const T *global_b0 = &B[(bk + load_b_row) * N + bx * BN + load_b_col];
+        const T *global_b1 =
+            &B[(bk + load_b_row + 16) * N + bx * BN + load_b_col];
 
         CP_ASYNC_CG(smem_b0, global_b0);
         CP_ASYNC_CG(smem_b1, global_b1);
@@ -178,8 +182,9 @@ __global__ void hgemm_gw_tiled_kernel(T *A, T *B, T *C, int M, int N, int K) {
 }
 
 template <const int BM = 128, const int BN = 128, const int BK = 32, typename T>
-__global__ void hgemm_gw_tiled_bcf_kernel(T *A, T *B, T *C, int M, int N,
-                                          int K) {
+__global__ void
+hgemm_gw_tiled_bcf_kernel(const T *__restrict__ A, const T *__restrict__ B,
+                          T *__restrict__ C, int M, int N, int K) {
     int linear_block_id = blockIdx.y * gridDim.x + blockIdx.x;
     const int SWIZZLE_W = 8;
 
@@ -210,8 +215,9 @@ __global__ void hgemm_gw_tiled_bcf_kernel(T *A, T *B, T *C, int M, int N,
         uint32_t smem_a1 = static_cast<uint32_t>(__cvta_generic_to_shared(
             &As[load_a_row + 64][SWIZZLE_A(load_a_row + 64, load_a_col)]));
 
-        T *global_a0 = &A[(by * BM + load_a_row) * K + bk + load_a_col];
-        T *global_a1 = &A[(by * BM + load_a_row + 64) * K + bk + load_a_col];
+        const T *global_a0 = &A[(by * BM + load_a_row) * K + bk + load_a_col];
+        const T *global_a1 =
+            &A[(by * BM + load_a_row + 64) * K + bk + load_a_col];
 
         CP_ASYNC_CG(smem_a0, global_a0);
         CP_ASYNC_CG(smem_a1, global_a1);
@@ -221,8 +227,9 @@ __global__ void hgemm_gw_tiled_bcf_kernel(T *A, T *B, T *C, int M, int N,
         uint32_t smem_b1 = static_cast<uint32_t>(__cvta_generic_to_shared(
             &Bs[load_b_row + 16][SWIZZLE_B(load_b_row + 16, load_b_col)]));
 
-        T *global_b0 = &B[(bk + load_b_row) * N + bx * BN + load_b_col];
-        T *global_b1 = &B[(bk + load_b_row + 16) * N + bx * BN + load_b_col];
+        const T *global_b0 = &B[(bk + load_b_row) * N + bx * BN + load_b_col];
+        const T *global_b1 =
+            &B[(bk + load_b_row + 16) * N + bx * BN + load_b_col];
 
         CP_ASYNC_CG(smem_b0, global_b0);
         CP_ASYNC_CG(smem_b1, global_b1);
@@ -302,9 +309,10 @@ __global__ void hgemm_gw_tiled_bcf_kernel(T *A, T *B, T *C, int M, int N,
 }
 
 template <const int BM = 128, const int BN = 128, const int BK = 32, typename T>
-__global__ void hgemm_gw_tiled_bcf_dbf_kernel(T *A, T *B, T *C, int M, int N,
-                                              int K) {
-    int linear_block_id = blockIdx.y * gridDim.x + blockIdx.x;
+__global__ void
+hgemm_gw_tiled_bcf_dbf_kernel(const T *__restrict__ A, const T *__restrict__ B,
+                              T *__restrict__ C, int M, int N, int K) {
+    int linear_block_id = blockIdx.y * gridDim.y + blockIdx.x;
     const int SWIZZLE_W = 8;
 
     int bx = ((linear_block_id / (SWIZZLE_W * gridDim.y)) * SWIZZLE_W) +
@@ -335,8 +343,8 @@ __global__ void hgemm_gw_tiled_bcf_dbf_kernel(T *A, T *B, T *C, int M, int N,
     uint32_t smem_a1 = static_cast<uint32_t>(__cvta_generic_to_shared(
         &As[0][load_a_row + 64][SWIZZLE_A(load_a_row + 64, load_a_col)]));
 
-    T *global_a0 = &A[(by * BM + load_a_row) * K + load_a_col];
-    T *global_a1 = &A[(by * BM + load_a_row + 64) * K + load_a_col];
+    const T *global_a0 = &A[(by * BM + load_a_row) * K + load_a_col];
+    const T *global_a1 = &A[(by * BM + load_a_row + 64) * K + load_a_col];
 
     CP_ASYNC_CG(smem_a0, global_a0);
     CP_ASYNC_CG(smem_a1, global_a1);
@@ -347,8 +355,8 @@ __global__ void hgemm_gw_tiled_bcf_dbf_kernel(T *A, T *B, T *C, int M, int N,
     uint32_t smem_b1 = static_cast<uint32_t>(__cvta_generic_to_shared(
         &Bs[0][load_b_row + 16][SWIZZLE_B(load_b_row + 16, load_b_col)]));
 
-    T *global_b0 = &B[(load_b_row + 0) * N + bx * BN + load_b_col];
-    T *global_b1 = &B[(load_b_row + 16) * N + bx * BN + load_b_col];
+    const T *global_b0 = &B[(load_b_row + 0) * N + bx * BN + load_b_col];
+    const T *global_b1 = &B[(load_b_row + 16) * N + bx * BN + load_b_col];
 
     CP_ASYNC_CG(smem_b0, global_b0);
     CP_ASYNC_CG(smem_b1, global_b1);
@@ -525,9 +533,11 @@ __global__ void hgemm_gw_tiled_bcf_dbf_kernel(T *A, T *B, T *C, int M, int N,
 }
 
 template <const int BM = 128, const int BN = 128, const int BK = 32, typename T>
-__global__ void hgemm_gw_tiled_bcf_dbf_cstore_kernel(T *A, T *B, T *C, int M,
+__global__ void hgemm_gw_tiled_bcf_dbf_cstore_kernel(const T *__restrict__ A,
+                                                     const T *__restrict__ B,
+                                                     T *__restrict__ C, int M,
                                                      int N, int K) {
-    int linear_block_id = blockIdx.y * gridDim.x + blockIdx.x;
+    int linear_block_id = blockIdx.y * gridDim.y + blockIdx.x;
     const int SWIZZLE_W = 8;
 
     int bx = ((linear_block_id / (SWIZZLE_W * gridDim.y)) * SWIZZLE_W) +
@@ -562,8 +572,8 @@ __global__ void hgemm_gw_tiled_bcf_dbf_cstore_kernel(T *A, T *B, T *C, int M,
     uint32_t smem_a1 = static_cast<uint32_t>(__cvta_generic_to_shared(
         &smem.As[0][load_a_row + 64][SWIZZLE_A(load_a_row + 64, load_a_col)]));
 
-    T *global_a0 = &A[(by * BM + load_a_row) * K + load_a_col];
-    T *global_a1 = &A[(by * BM + load_a_row + 64) * K + load_a_col];
+    const T *global_a0 = &A[(by * BM + load_a_row) * K + load_a_col];
+    const T *global_a1 = &A[(by * BM + load_a_row + 64) * K + load_a_col];
 
     CP_ASYNC_CG(smem_a0, global_a0);
     CP_ASYNC_CG(smem_a1, global_a1);
@@ -573,8 +583,8 @@ __global__ void hgemm_gw_tiled_bcf_dbf_cstore_kernel(T *A, T *B, T *C, int M,
     uint32_t smem_b1 = static_cast<uint32_t>(__cvta_generic_to_shared(
         &smem.Bs[0][load_b_row + 16][SWIZZLE_B(load_b_row + 16, load_b_col)]));
 
-    T *global_b0 = &B[(load_b_row + 0) * N + bx * BN + load_b_col];
-    T *global_b1 = &B[(load_b_row + 16) * N + bx * BN + load_b_col];
+    const T *global_b0 = &B[(load_b_row + 0) * N + bx * BN + load_b_col];
+    const T *global_b1 = &B[(load_b_row + 16) * N + bx * BN + load_b_col];
 
     CP_ASYNC_CG(smem_b0, global_b0);
     CP_ASYNC_CG(smem_b1, global_b1);
