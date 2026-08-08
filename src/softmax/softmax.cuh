@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../common/cuda/cuda_utils.h"
-#include "online_softmax_kernel.cuh"
+#include "safe_online_softmax_kernel.cuh"
 #include "safe_softmax_kernel.cuh"
 #include "softmax_kernel.cuh"
 #include <cuda_runtime.h>

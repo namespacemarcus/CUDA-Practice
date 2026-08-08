@@ -1,4 +1,4 @@
-#include "./common/reduce.cuh"
+#include "reduce.cuh"
 #include <cuda_fp16.h>
 
 template <const int NUM_THREADS = 256>

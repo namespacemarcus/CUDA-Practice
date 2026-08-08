@@ -1,5 +1,5 @@
-#include "./common/reduce.cuh"
 #include <float.h>
+#include "online_reduce.cuh"
 
 template <const int NUM_THREADS = 256>
 __global__ void online_safe_softmax_f32_per_token_kernel(const float *x,

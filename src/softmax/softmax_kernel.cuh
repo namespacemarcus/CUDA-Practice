@@ -1,5 +1,5 @@
 
-#include "./common/reduce.cuh"
+#include "reduce.cuh"
 
 // x: (s, d), y: (s, d)
 // grid(s), block(d)
