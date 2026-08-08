@@ -9,6 +9,8 @@
 
 #define SWIZZLE_B(row, col) ((col) ^ (((row) & 0x7) << 3))
 
+#define SWIZZLE_C(row, col) ((col) ^ (((row) & 0x7) << 3))
+
 // cp.async
 #define CP_ASYNC_CG(dst_smem_ptr_32b, src_global_ptr)                          \
     asm volatile("cp.async.cg.shared.global.L2::128B [%0], [%1], 16;\n"        \
@@ -138,31 +140,15 @@ __global__ void hgemm_gw_tiled_kernel(T *A, T *B, T *C, int M, int N, int K) {
 #pragma unroll
                 for (int n = 0; n < 4; ++n) {
                     if constexpr (std::is_same_v<T, __half>) {
-                        // clang-format off
-                        M16N8K16_F16(sum[m][n][0],
-                                     sum[m][n][1],
-                                     sum[m][n][2],
-                                     sum[m][n][3],
-                                     reg_a[m][0],
-                                     reg_a[m][1],
-                                     reg_a[m][2],
-                                     reg_a[m][3],
-                                     reg_b[n][0],
+                        M16N8K16_F16(sum[m][n][0], sum[m][n][1], sum[m][n][2],
+                                     sum[m][n][3], reg_a[m][0], reg_a[m][1],
+                                     reg_a[m][2], reg_a[m][3], reg_b[n][0],
                                      reg_b[n][1]);
-                        // clang-format on
                     } else {
-                        // clang-format off
-                        M16N8K16_BF16(sum[m][n][0],
-                                      sum[m][n][1],
-                                      sum[m][n][2],
-                                      sum[m][n][3],
-                                      reg_a[m][0],
-                                      reg_a[m][1],
-                                      reg_a[m][2],
-                                      reg_a[m][3],
-                                      reg_b[n][0],
+                        M16N8K16_BF16(sum[m][n][0], sum[m][n][1], sum[m][n][2],
+                                      sum[m][n][3], reg_a[m][0], reg_a[m][1],
+                                      reg_a[m][2], reg_a[m][3], reg_b[n][0],
                                       reg_b[n][1]);
-                        // clang-format on
                     }
                 }
             }
@@ -277,31 +263,15 @@ __global__ void hgemm_gw_tiled_bcf_kernel(T *A, T *B, T *C, int M, int N,
 #pragma unroll
                 for (int n = 0; n < 4; ++n) {
                     if constexpr (std::is_same_v<T, __half>) {
-                        // clang-format off
-                        M16N8K16_F16(sum[m][n][0],
-                                     sum[m][n][1],
-                                     sum[m][n][2],
-                                     sum[m][n][3],
-                                     reg_a[m][0],
-                                     reg_a[m][1],
-                                     reg_a[m][2],
-                                     reg_a[m][3],
-                                     reg_b[n][0],
+                        M16N8K16_F16(sum[m][n][0], sum[m][n][1], sum[m][n][2],
+                                     sum[m][n][3], reg_a[m][0], reg_a[m][1],
+                                     reg_a[m][2], reg_a[m][3], reg_b[n][0],
                                      reg_b[n][1]);
-                        // clang-format on
                     } else {
-                        // clang-format off
-                        M16N8K16_BF16(sum[m][n][0],
-                                      sum[m][n][1],
-                                      sum[m][n][2],
-                                      sum[m][n][3],
-                                      reg_a[m][0],
-                                      reg_a[m][1],
-                                      reg_a[m][2],
-                                      reg_a[m][3],
-                                      reg_b[n][0],
+                        M16N8K16_BF16(sum[m][n][0], sum[m][n][1], sum[m][n][2],
+                                      sum[m][n][3], reg_a[m][0], reg_a[m][1],
+                                      reg_a[m][2], reg_a[m][3], reg_b[n][0],
                                       reg_b[n][1]);
-                        // clang-format on
                     }
                 }
             }
@@ -377,7 +347,7 @@ __global__ void hgemm_gw_tiled_bcf_dbf_kernel(T *A, T *B, T *C, int M, int N,
     uint32_t smem_b1 = static_cast<uint32_t>(__cvta_generic_to_shared(
         &Bs[0][load_b_row + 16][SWIZZLE_B(load_b_row + 16, load_b_col)]));
 
-    T *global_b0 = &B[(load_b_row) * N + bx * BN + load_b_col];
+    T *global_b0 = &B[(load_b_row + 0) * N + bx * BN + load_b_col];
     T *global_b1 = &B[(load_b_row + 16) * N + bx * BN + load_b_col];
 
     CP_ASYNC_CG(smem_b0, global_b0);
@@ -456,31 +426,15 @@ __global__ void hgemm_gw_tiled_bcf_dbf_kernel(T *A, T *B, T *C, int M, int N,
 #pragma unroll
                 for (int n = 0; n < 4; ++n) {
                     if constexpr (std::is_same_v<T, __half>) {
-                        // clang-format off
-                        M16N8K16_F16(sum[m][n][0],
-                                     sum[m][n][1],
-                                     sum[m][n][2],
-                                     sum[m][n][3],
-                                     reg_a[m][0],
-                                     reg_a[m][1],
-                                     reg_a[m][2],
-                                     reg_a[m][3],
-                                     reg_b[n][0],
+                        M16N8K16_F16(sum[m][n][0], sum[m][n][1], sum[m][n][2],
+                                     sum[m][n][3], reg_a[m][0], reg_a[m][1],
+                                     reg_a[m][2], reg_a[m][3], reg_b[n][0],
                                      reg_b[n][1]);
-                        // clang-format on
                     } else {
-                        // clang-format off
-                        M16N8K16_BF16(sum[m][n][0],
-                                      sum[m][n][1],
-                                      sum[m][n][2],
-                                      sum[m][n][3],
-                                      reg_a[m][0],
-                                      reg_a[m][1],
-                                      reg_a[m][2],
-                                      reg_a[m][3],
-                                      reg_b[n][0],
+                        M16N8K16_BF16(sum[m][n][0], sum[m][n][1], sum[m][n][2],
+                                      sum[m][n][3], reg_a[m][0], reg_a[m][1],
+                                      reg_a[m][2], reg_a[m][3], reg_b[n][0],
                                       reg_b[n][1]);
-                        // clang-format on
                     }
                 }
             }
@@ -531,31 +485,15 @@ __global__ void hgemm_gw_tiled_bcf_dbf_kernel(T *A, T *B, T *C, int M, int N,
 #pragma unroll
             for (int n = 0; n < 4; ++n) {
                 if constexpr (std::is_same_v<T, __half>) {
-                    // clang-format off
-                    M16N8K16_F16(sum[m][n][0],
-                                 sum[m][n][1],
-                                 sum[m][n][2],
-                                 sum[m][n][3],
-                                 reg_a[m][0],
-                                 reg_a[m][1],
-                                 reg_a[m][2],
-                                 reg_a[m][3],
-                                 reg_b[n][0],
+                    M16N8K16_F16(sum[m][n][0], sum[m][n][1], sum[m][n][2],
+                                 sum[m][n][3], reg_a[m][0], reg_a[m][1],
+                                 reg_a[m][2], reg_a[m][3], reg_b[n][0],
                                  reg_b[n][1]);
-                    // clang-format on
                 } else {
-                    // clang-format off
-                    M16N8K16_BF16(sum[m][n][0],
-                                  sum[m][n][1],
-                                  sum[m][n][2],
-                                  sum[m][n][3],
-                                  reg_a[m][0],
-                                  reg_a[m][1],
-                                  reg_a[m][2],
-                                  reg_a[m][3],
-                                  reg_b[n][0],
+                    M16N8K16_BF16(sum[m][n][0], sum[m][n][1], sum[m][n][2],
+                                  sum[m][n][3], reg_a[m][0], reg_a[m][1],
+                                  reg_a[m][2], reg_a[m][3], reg_b[n][0],
                                   reg_b[n][1]);
-                    // clang-format on
                 }
             }
         }
@@ -583,5 +521,238 @@ __global__ void hgemm_gw_tiled_bcf_dbf_kernel(T *A, T *B, T *C, int M, int N,
                     __float22bfloat162_rn(FLOAT2(sum[m][n][2]));
             }
         }
+    }
+}
+
+template <const int BM = 128, const int BN = 128, const int BK = 32, typename T>
+__global__ void hgemm_gw_tiled_bcf_dbf_cstore_kernel(T *A, T *B, T *C, int M,
+                                                     int N, int K) {
+    int linear_block_id = blockIdx.y * gridDim.x + blockIdx.x;
+    const int SWIZZLE_W = 8;
+
+    int bx = ((linear_block_id / (SWIZZLE_W * gridDim.y)) * SWIZZLE_W) +
+             (linear_block_id % SWIZZLE_W);
+    int by = (linear_block_id / SWIZZLE_W) % gridDim.y;
+
+    int tid = threadIdx.x;
+    int warpId = tid / WARP_SIZE;
+    int laneId = tid % WARP_SIZE;
+
+    int load_a_row = tid / 4;
+    int load_a_col = (tid % 4) * 8;
+    int load_b_row = tid / 16;
+    int load_b_col = (tid % 16) * 8;
+
+    __shared__ __align__(128) union {
+        struct {
+            T As[2][BM][BK];
+            T Bs[2][BK][BN];
+        };
+
+        T Cs[BM][BN];
+    } smem;
+
+    int warp_row = warpId / 4;
+    int warp_col = warpId % 4;
+
+    float sum[4][4][4]{0.0f};
+
+    uint32_t smem_a0 = static_cast<uint32_t>(__cvta_generic_to_shared(
+        &smem.As[0][load_a_row][SWIZZLE_A(load_a_row, load_a_col)]));
+    uint32_t smem_a1 = static_cast<uint32_t>(__cvta_generic_to_shared(
+        &smem.As[0][load_a_row + 64][SWIZZLE_A(load_a_row + 64, load_a_col)]));
+
+    T *global_a0 = &A[(by * BM + load_a_row) * K + load_a_col];
+    T *global_a1 = &A[(by * BM + load_a_row + 64) * K + load_a_col];
+
+    CP_ASYNC_CG(smem_a0, global_a0);
+    CP_ASYNC_CG(smem_a1, global_a1);
+
+    uint32_t smem_b0 = static_cast<uint32_t>(__cvta_generic_to_shared(
+        &smem.Bs[0][load_b_row][SWIZZLE_B(load_b_row, load_b_col)]));
+    uint32_t smem_b1 = static_cast<uint32_t>(__cvta_generic_to_shared(
+        &smem.Bs[0][load_b_row + 16][SWIZZLE_B(load_b_row + 16, load_b_col)]));
+
+    T *global_b0 = &B[(load_b_row + 0) * N + bx * BN + load_b_col];
+    T *global_b1 = &B[(load_b_row + 16) * N + bx * BN + load_b_col];
+
+    CP_ASYNC_CG(smem_b0, global_b0);
+    CP_ASYNC_CG(smem_b1, global_b1);
+
+    CP_ASYNC_COMMIT_GROUP();
+    CP_ASYNC_WAIT_GROUP_0();
+    __syncthreads();
+
+    int read_idx = 0;
+    int write_idx = 1;
+
+    for (int bk = 32; bk < K; bk += BK) {
+        smem_a0 = static_cast<uint32_t>(__cvta_generic_to_shared(
+            &smem.As[write_idx][load_a_row]
+                    [SWIZZLE_A(load_a_row, load_a_col)]));
+        smem_a1 = static_cast<uint32_t>(__cvta_generic_to_shared(
+            &smem.As[write_idx][load_a_row + 64]
+                    [SWIZZLE_A(load_a_row + 64, load_a_col)]));
+
+        global_a0 += BK;
+        global_a1 += BK;
+
+        CP_ASYNC_CG(smem_a0, global_a0);
+        CP_ASYNC_CG(smem_a1, global_a1);
+
+        smem_b0 = static_cast<uint32_t>(__cvta_generic_to_shared(
+            &smem.Bs[write_idx][load_b_row]
+                    [SWIZZLE_B(load_b_row, load_b_col)]));
+        smem_b1 = static_cast<uint32_t>(__cvta_generic_to_shared(
+            &smem.Bs[write_idx][load_b_row + 16]
+                    [SWIZZLE_B(load_b_row + 16, load_b_col)]));
+
+        global_b0 += BK * N;
+        global_b1 += BK * N;
+
+        CP_ASYNC_CG(smem_b0, global_b0);
+        CP_ASYNC_CG(smem_b1, global_b1);
+
+        CP_ASYNC_COMMIT_GROUP();
+
+#pragma unroll
+        for (int k_step = 0; k_step < 2; ++k_step) {
+            int k_offset = k_step * 16;
+
+            uint32_t reg_a[4][4];
+            uint32_t reg_b[4][2];
+
+#pragma unroll
+            for (int m = 0; m < 4; ++m) {
+                int a_row = warp_row * 64 + m * 16 + (laneId % 16);
+                int a_col = k_offset + (laneId / 16) * 8;
+                uint32_t smem_addr =
+                    static_cast<uint32_t>(__cvta_generic_to_shared(
+                        &smem.As[read_idx][a_row][SWIZZLE_A(a_row, a_col)]));
+                LDMATRIX_X4(reg_a[m][0], reg_a[m][1], reg_a[m][2], reg_a[m][3],
+                            smem_addr);
+            }
+
+#pragma unroll
+            for (int n = 0; n < 4; ++n) {
+                int b_row = k_offset + (laneId % 16);
+                int b_col = warp_col * 32 + n * 8;
+                uint32_t smem_addr =
+                    static_cast<uint32_t>(__cvta_generic_to_shared(
+                        &smem.Bs[read_idx][b_row][SWIZZLE_B(b_row, b_col)]));
+                LDMATRIX_X2_TRANS(reg_b[n][0], reg_b[n][1], smem_addr);
+            }
+
+#pragma unroll
+            for (int m = 0; m < 4; ++m) {
+#pragma unroll
+                for (int n = 0; n < 4; ++n) {
+                    if constexpr (std::is_same_v<T, __half>) {
+                        M16N8K16_F16(sum[m][n][0], sum[m][n][1], sum[m][n][2],
+                                     sum[m][n][3], reg_a[m][0], reg_a[m][1],
+                                     reg_a[m][2], reg_a[m][3], reg_b[n][0],
+                                     reg_b[n][1]);
+                    } else {
+                        M16N8K16_BF16(sum[m][n][0], sum[m][n][1], sum[m][n][2],
+                                      sum[m][n][3], reg_a[m][0], reg_a[m][1],
+                                      reg_a[m][2], reg_a[m][3], reg_b[n][0],
+                                      reg_b[n][1]);
+                    }
+                }
+            }
+        }
+        CP_ASYNC_WAIT_GROUP_0();
+        __syncthreads();
+        read_idx ^= 1;
+        write_idx ^= 1;
+    }
+
+#pragma unroll
+    for (int k_step = 0; k_step < 2; ++k_step) {
+        int k_offset = k_step * 16;
+
+        uint32_t reg_a[4][4];
+        uint32_t reg_b[4][2];
+
+#pragma unroll
+        for (int m = 0; m < 4; ++m) {
+            int a_row = warp_row * 64 + m * 16 + (laneId % 16);
+            int a_col = k_offset + (laneId / 16) * 8;
+            uint32_t smem_addr = static_cast<uint32_t>(__cvta_generic_to_shared(
+                &smem.As[read_idx][a_row][SWIZZLE_A(a_row, a_col)]));
+            LDMATRIX_X4(reg_a[m][0], reg_a[m][1], reg_a[m][2], reg_a[m][3],
+                        smem_addr);
+        }
+
+#pragma unroll
+        for (int n = 0; n < 4; ++n) {
+            int b_row = k_offset + (laneId % 16);
+            int b_col = warp_col * 32 + n * 8;
+            uint32_t smem_addr = static_cast<uint32_t>(__cvta_generic_to_shared(
+                &smem.Bs[read_idx][b_row][SWIZZLE_B(b_row, b_col)]));
+            LDMATRIX_X2_TRANS(reg_b[n][0], reg_b[n][1], smem_addr);
+        }
+
+#pragma unroll
+        for (int m = 0; m < 4; ++m) {
+#pragma unroll
+            for (int n = 0; n < 4; ++n) {
+                if constexpr (std::is_same_v<T, __half>) {
+                    M16N8K16_F16(sum[m][n][0], sum[m][n][1], sum[m][n][2],
+                                 sum[m][n][3], reg_a[m][0], reg_a[m][1],
+                                 reg_a[m][2], reg_a[m][3], reg_b[n][0],
+                                 reg_b[n][1]);
+                } else {
+                    M16N8K16_BF16(sum[m][n][0], sum[m][n][1], sum[m][n][2],
+                                  sum[m][n][3], reg_a[m][0], reg_a[m][1],
+                                  reg_a[m][2], reg_a[m][3], reg_b[n][0],
+                                  reg_b[n][1]);
+                }
+            }
+        }
+    }
+
+    /* store C */
+    __syncthreads();
+
+    int t_row = laneId / 4;
+    int t_col = (laneId % 4) * 2;
+
+#pragma unroll
+    for (int m = 0; m < 4; ++m) {
+#pragma unroll
+        for (int n = 0; n < 4; ++n) {
+            int c_base_row = warp_row * 64 + m * 16;
+            int c_base_col = warp_col * 32 + n * 8;
+
+            int c_row_0 = c_base_row + t_row;
+            int c_row_2 = c_base_row + t_row + 8;
+            int c_col = c_base_col + t_col;
+
+            if constexpr (std::is_same_v<T, __half>) {
+                HALF2(smem.Cs[c_row_0][SWIZZLE_C(c_row_0, c_col)]) =
+                    __float22half2_rn(FLOAT2(sum[m][n][0]));
+                HALF2(smem.Cs[c_row_2][SWIZZLE_C(c_row_2, c_col)]) =
+                    __float22half2_rn(FLOAT2(sum[m][n][2]));
+            } else {
+                BFLOAT2(smem.Cs[c_row_0][SWIZZLE_C(c_row_0, c_col)]) =
+                    __float22bfloat162_rn(FLOAT2(sum[m][n][0]));
+                BFLOAT2(smem.Cs[c_row_2][SWIZZLE_C(c_row_2, c_col)]) =
+                    __float22bfloat162_rn(FLOAT2(sum[m][n][2]));
+            }
+        }
+    }
+
+    __syncthreads();
+
+    T *c_block = &C[by * BM * N + bx * BN];
+
+#pragma unroll
+    for (int step = 0; step < 8; ++step) {
+        int row = step * 16 + tid / 16;
+        int col = (tid % 16) * 8;
+
+        FLOAT4(c_block[row * N + col]) =
+            FLOAT4(smem.Cs[row][SWIZZLE_C(row, col)]);
     }
 }

@@ -25,6 +25,8 @@ FNS = [
     "hgemm_gw_tiled",
     "hgemm_gw_tiled_bcf",
     "hgemm_gw_tiled_bcf_dbf",
+    "hgemm_gw_tiled_bcf_dbf_cstore",
+    "hgemm_cublas",
 ]
 
 DTYPES = [torch.float16, torch.bfloat16]
