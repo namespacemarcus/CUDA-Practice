@@ -36,7 +36,8 @@ void matrix_transpose_f32x4_loadcoal_smem(torch::Tensor x, torch::Tensor y) {
     const int N = x.size(1);
 
     dim3 block(kThreadsPerBlock);
-    dim3 grid((M * N + kThreadsPerBlock - 1) / kThreadsPerBlock);
+    dim3 grid(((N + kTileSize - 1) / kTileSize),
+              ((M + kTileSize - 1) / kTileSize));
     matrix_transpose_f32x4_loadcoal_smem_kernel<<<grid, block>>>(
         reinterpret_cast<float *>(x.data_ptr()),
         reinterpret_cast<float *>(y.data_ptr()), M, N);
@@ -50,7 +51,8 @@ void matrix_transpose_f32x4_loadcoal_smem_bcf(torch::Tensor x,
     const int N = x.size(1);
 
     dim3 block(kThreadsPerBlock);
-    dim3 grid((M * N + kThreadsPerBlock - 1) / kThreadsPerBlock);
+    dim3 grid(((N + kTileSize - 1) / kTileSize),
+              ((M + kTileSize - 1) / kTileSize));
     matrix_transpose_f32x4_loadcoal_smem_bcf_kernel<<<grid, block>>>(
         reinterpret_cast<float *>(x.data_ptr()),
         reinterpret_cast<float *>(y.data_ptr()), M, N);

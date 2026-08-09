@@ -62,7 +62,7 @@ __global__ void matrix_transpose_f32x4_loadcoal_smem_kernel(float *x, float *y,
     } else {
 #pragma unroll
         for (int i = 0; i < 4; ++i) {
-            if (input_y < row && input_x < col) {
+            if (input_y < row && input_x + i < col) {
                 tile[sy][sx + i] = x[input_y * col + input_x + i];
             }
         }
