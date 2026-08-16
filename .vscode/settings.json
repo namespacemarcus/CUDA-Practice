@@ -24,7 +24,8 @@
     },
 
     "cmake.cmakePath": "/usr/bin/cmake",
-    "editor.fontFamily": "Cascadia Code",
+    "editor.fontFamily": "Consolas",
     "python-envs.defaultEnvManager": "ms-python.python:conda",
     "python-envs.defaultPackageManager": "ms-python.python:conda",
+    "editor.fontSize": 16,
 }

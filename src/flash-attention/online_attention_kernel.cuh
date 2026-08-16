@@ -9,12 +9,10 @@ constexpr int kKvTileSize = 16;
 constexpr int kMaxHeadDim = 256;
 
 template <typename scalar_t, int kMaxDim, bool kCausal>
-__global__ void flash_attention_naive_kernel(const scalar_t *__restrict__ query,
-                                             const scalar_t *__restrict__ key,
-                                             const scalar_t *__restrict__ value,
-                                             scalar_t *__restrict__ output,
-                                             int q_seqlen, int kv_seqlen,
-                                             int head_dim, int num_heads) {
+__global__ void online_attention_naive_kernel(
+    const scalar_t *__restrict__ query, const scalar_t *__restrict__ key,
+    const scalar_t *__restrict__ value, scalar_t *__restrict__ output,
+    int q_seqlen, int kv_seqlen, int head_dim, int num_heads) {
     constexpr int kValuesPerLane = (kMaxDim + kWarpSize - 1) / kWarpSize;
 
     const int warpId = threadIdx.x / kWarpSize;
@@ -109,7 +107,7 @@ __global__ void flash_attention_naive_kernel(const scalar_t *__restrict__ query,
 }
 
 template <typename scalar_t, int kMaxDim, bool kCausal>
-__global__ void flash_attention_kv_tiled_kernel(
+__global__ void online_attention_kv_tiled_kernel(
     const scalar_t *__restrict__ query, const scalar_t *__restrict__ key,
     const scalar_t *__restrict__ value, scalar_t *__restrict__ output,
     int q_seqlen, int kv_seqlen, int head_dim, int num_heads) {
