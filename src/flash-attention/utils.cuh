@@ -1,3 +1,5 @@
+#pragma once
+
 #include "../common/defs.h"
 #include "../common/tensor_utils.h"
 #include <cuda_fp16.h>
@@ -89,7 +91,8 @@ struct AttentionShape {
 
 AttentionShape check_attention_inputs(const torch::Tensor &query,
                                       const torch::Tensor &key,
-                                      const torch::Tensor &value) {
+                                      const torch::Tensor &value,
+                                      int max_head_dim) {
     CHECK_CUDA(query);
     CHECK_CUDA(key);
     CHECK_CUDA(value);
@@ -121,8 +124,8 @@ AttentionShape check_attention_inputs(const torch::Tensor &query,
                     key.size(2) > 0,
                 "batch, head, query sequence length and kv sequence length "
                 "must all be greater than 0");
-    TORCH_CHECK(query.size(3) > 0 && query.size(3) <= kMaxHeadDim,
-                "head_dim must be in range [1, ", kMaxHeadDim, "], but got ",
+    TORCH_CHECK(query.size(3) > 0 && query.size(3) <= max_head_dim,
+                "head_dim must be in range [1, ", max_head_dim, "], but got ",
                 query.size(3));
     TORCH_CHECK(
         query.size(0) <= 65535 && query.size(1) <= 65535,

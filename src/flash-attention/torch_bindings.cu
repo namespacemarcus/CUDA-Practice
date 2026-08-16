@@ -1,5 +1,5 @@
-#include "online_attention.cuh"
 #include "flash_attention.cuh"
+#include "online_attention.cuh"
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, module) {
     namespace py = pybind11;
@@ -10,10 +10,10 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, module) {
                py::arg("query"), py::arg("key"), py::arg("value"),
                py::arg("causal") = false);
 
-    module.def("flash_attention_v1_forward", &flash_attention_v1,
+    module.def("flash_attention_v1_forward", &flash_attention_v1_forward,
                py::arg("query"), py::arg("key"), py::arg("value"),
                py::arg("causal") = false);
-    module.def("flash_attention_v2_forward", &flash_attention_v2,
+    module.def("flash_attention_v2_forward", &flash_attention_v2_forward,
                py::arg("query"), py::arg("key"), py::arg("value"),
                py::arg("causal") = false);
 }

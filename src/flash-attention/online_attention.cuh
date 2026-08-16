@@ -47,7 +47,8 @@ void dispatch_naive_head_dim(const torch::Tensor &query,
 
 torch::Tensor online_attention_naive(torch::Tensor query, torch::Tensor key,
                                      torch::Tensor value, bool causal) {
-    const AttentionShape shape = check_attention_inputs(query, key, value);
+    const AttentionShape shape =
+        check_attention_inputs(query, key, value, kMaxHeadDim);
     const CudaDeviceGuard device_guard(query.get_device());
     const cudaStream_t stream = at::cuda::getCurrentCUDAStream();
     torch::Tensor output = torch::empty_like(query);
@@ -118,8 +119,9 @@ void dispatch_kv_tiled_head_dim(const torch::Tensor &query,
 }
 
 torch::Tensor online_attention_kv_tiled(torch::Tensor query, torch::Tensor key,
-                                       torch::Tensor value, bool causal) {
-    const AttentionShape shape = check_attention_inputs(query, key, value);
+                                        torch::Tensor value, bool causal) {
+    const AttentionShape shape =
+        check_attention_inputs(query, key, value, kMaxHeadDim);
     const CudaDeviceGuard device_guard(query.get_device());
     const cudaStream_t stream = at::cuda::getCurrentCUDAStream();
     torch::Tensor output = torch::empty_like(query);

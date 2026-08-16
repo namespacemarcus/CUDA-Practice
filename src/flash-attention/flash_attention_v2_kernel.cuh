@@ -8,14 +8,15 @@
 namespace fa2 {
 constexpr int NUM_WARPS = 8;
 constexpr int THREADS = WARP_SIZE * NUM_WARPS;
-constexpr int BQ = WARPS;
+constexpr int BQ = NUM_WARPS;
 constexpr int BK = 16;
 } // namespace fa2
 
 // 一个 block 256线程算一个 BQ，一个 warp 算一行 query
 
 template <typename scalar_t, int kMaxDim, bool kCausal>
-__global__ __launch_bounds__(fa2::THREADS) void flash_attention_v2_kernel(
+__global__
+__launch_bounds__(fa2::THREADS) void flash_attention_v2_forward_kernel(
     const scalar_t *__restrict__ query, const scalar_t *__restrict__ key,
     const scalar_t *__restrict__ value, scalar_t *__restrict__ output,
     float *__restrict__ logsumexp, int q_seqlen, int kv_seqlen, int head_dim,
@@ -30,7 +31,7 @@ __global__ __launch_bounds__(fa2::THREADS) void flash_attention_v2_kernel(
     const int laneId = thread_id % WARP_SIZE;
 
     const int query_start = blockIdx.x * fa2::BQ;
-    const int query_id = query_start + warp_id;
+    const int query_id = query_start + warpId;
     const int64_t batch_head_id =
         static_cast<int64_t>(blockIdx.z) * num_heads + blockIdx.y;
     const int64_t query_base =
@@ -125,7 +126,7 @@ __global__ __launch_bounds__(fa2::THREADS) void flash_attention_v2_kernel(
                 const int dim = laneId + item * WARP_SIZE;
                 float tile_output = 0.0f;
                 for (int tile_row = 0; tile_row < valid_keys; ++tile_row) {
-                    const float tile_p = __shfl__sync(
+                    const float tile_p = __shfl_sync(
                         0xffffffff, p,
                         tile_row); // 每个线程都拿到了q对当前k未归一化的权重，分别去算对应v向量的分量
                     if (dim < head_dim) {
@@ -149,10 +150,10 @@ __global__ __launch_bounds__(fa2::THREADS) void flash_attention_v2_kernel(
 
     if (query_id < q_seqlen) {
         if (laneId == 0) {
-            logsumex[lse_base + query_id] = row_max + logf(row_sum);
+            logsumexp[lse_base + query_id] = row_max + logf(row_sum);
         }
         const float inverse_row_sum = 1.0f / row_sum;
-#pragma unrol
+#pragma unroll
         for (int item = 0; item < kValuesPerLane; ++item) {
             const int dim = laneId + item * WARP_SIZE;
             if (dim < head_dim) {
@@ -163,3 +164,39 @@ __global__ __launch_bounds__(fa2::THREADS) void flash_attention_v2_kernel(
         }
     }
 }
+
+// todo: backward kernel
+// template <typename scalar_t, int kMaxDim, bool kCausal>
+// __global__
+// __launch_bounds__(fa2::THREADS) void flash_attention_v2_backward_kernel(
+//     const scalar_t *__restrict__ query, const scalar_t *__restrict__ key,
+//     const scalar_t *__restrict__ value,
+//     const scalar_t *__restrict__ output,          // [B,H,Nq,D]
+//     const scalar_t *__restrict__ output_gradient, // [B,H,Nq,D]
+//     const float *__restrict__ logsumexp,          // [B,H,Nq]
+//     float *__restrict__ query_gradient,           // [B,H,Nq,D]
+//     float *__restrict__ key_gradient,             // [B,H,Nk,D]
+//     float *__restrict__ value_gradient,           // [B,H,Nk,D]
+//     int q_seqlen, int kv_seqlen, int head_dim, int num_heads) {
+//     constexpr int kValuesPerLane = (kMaxDim + WARP_SIZE - 1) / WARP_SIZE;
+
+//     __shared__ scalar_t shared_key[fa2::BK * kMaxDim];
+//     __shared__ scalar_t shared_value[fa2::BK * kMaxDim];
+
+//     const int thread_id = threadIdx.x;
+//     const int warpId = thread_id / WARP_SIZE;
+//     const int laneId = thread_id % WARP_SIZE;
+
+//     const int query_start = blockIdx.x * fa2::BQ;
+//     const int query_id = query_start + warpId;
+//     const int64_t batch_head_id =
+//         static_cast<int64_t>(blockIdx.z) * num_heads + blockIdx.y;
+//     const int64_t query_base =
+//         batch_head_id * static_cast<int64_t>(q_seqlen) * head_dim;
+//     const int64_t kv_base =
+//         batch_head_id * static_cast<int64_t>(kv_seqlen) * head_dim;
+//     const int64_t lse_base = batch_head_id * static_cast<int64_t>(q_seqlen);
+
+//     float query_fragment[kValuesPerLane];
+//     float gradient_fragment[kValuesPerLane];
+// }

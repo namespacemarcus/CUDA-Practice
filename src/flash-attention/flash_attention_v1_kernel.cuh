@@ -62,7 +62,7 @@ __launch_bounds__(fa1::THREADS) void flash_attention_v1_forward_kernel(
         // 256线程共同加载K和V. 线性空间前半段对应K,后半段对应V
         for (int task = thread_id; task < 2 * fa1::BK * kMaxDim;
              task += fa1::THREADS) {
-            const bool load_value = task >= f1::BK * kMaxDim;
+            const bool load_value = task >= fa1::BK * kMaxDim;
             const int index = load_value ? task - fa1::BK * kMaxDim : task;
             const int key_row = index / kMaxDim;
             const int dim = index % kMaxDim;

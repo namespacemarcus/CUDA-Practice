@@ -7,6 +7,10 @@
 #include <c10/cuda/CUDAGuard.h>
 #include <torch/extension.h>
 
+namespace fa {
+constexpr int kMaxHeadDim = 256;
+} // namespace fa
+
 // flash attention v1
 template <typename scalar_t, int kMaxDim, bool kCausal>
 void launch_flash_attention_v1(
@@ -15,7 +19,7 @@ void launch_flash_attention_v1(
     torch::Tensor &row_max, const AttentionShape &shape, cudaStream_t stream) {
     const dim3 block(fa1::THREADS);
     const dim3 grid(1, shape.num_heads, shape.batch_size);
-    flash_attention_v1_kernel<scalar_t, kMaxDim, kCausal>
+    flash_attention_v1_forward_kernel<scalar_t, kMaxDim, kCausal>
         <<<grid, block, 0, stream>>>(
             reinterpret_cast<const scalar_t *>(query.data_ptr()),
             reinterpret_cast<const scalar_t *>(key.data_ptr()),
@@ -46,11 +50,10 @@ void dispatch_flash_attention_v1_head_dim(
     }
 }
 
-std::vector<torch::Tensor> flash_attention_v1_forward(torch::Tensor query,
-                                                      torch::Tensor key,
-                                                      torch::Tensor value,
-                                                      bool causal) {
-    const AttentionShape shape = check_attention_inputs(query, key, value);
+torch::Tensor flash_attention_v1_forward(torch::Tensor query, torch::Tensor key,
+                                         torch::Tensor value, bool causal) {
+    const AttentionShape shape =
+        check_attention_inputs(query, key, value, fa::kMaxHeadDim);
     const CudaDeviceGuard device_guard(query.get_device());
     const cudaStream_t stream = at::cuda::getCurrentCUDAStream();
     torch::Tensor output = torch::zeros_like(query);
@@ -76,12 +79,7 @@ std::vector<torch::Tensor> flash_attention_v1_forward(torch::Tensor query,
             query, key, value, output, row_sum, row_max, shape, stream);
     }
     check_cuda(cudaGetLastError(), "flash_attention_v1 failed.");
-    return {output, row_sum, row_max};
-}
-
-torch::Tensor flash_attention_v1(torch::Tensor query, torch::Tensor key,
-                                 torch::Tensor value, bool causal) {
-    return flash_attention_v1_forward(query, key, value, causal)[0];
+    return output;
 }
 
 // flash attention v2
@@ -95,7 +93,7 @@ void launch_flash_attention_v2(const torch::Tensor &query,
     const dim3 block(fa2::THREADS);
     const int query_blocks = (shape.q_seqlen + fa2::BQ - 1) / fa2::BQ;
     const dim3 grid(query_blocks, shape.num_heads, shape.batch_size);
-    flash_attention_v2_kernel<scalar_t, kMaxDim, kCausal>
+    flash_attention_v2_forward_kernel<scalar_t, kMaxDim, kCausal>
         <<<grid, block, 0, stream>>>(
             reinterpret_cast<const scalar_t *>(query.data_ptr()),
             reinterpret_cast<const scalar_t *>(key.data_ptr()),
@@ -125,11 +123,10 @@ void dispatch_flash_attention_v2_head_dim(
     }
 }
 
-std::vector<torch::Tensor> flash_attention_v2_forward(torch::Tensor query,
-                                                      torch::Tensor key,
-                                                      torch::Tensor value,
-                                                      bool causal) {
-    const AttentionShape shape = check_attention_inputs(query, key, value);
+torch::Tensor flash_attention_v2_forward(torch::Tensor query, torch::Tensor key,
+                                         torch::Tensor value, bool causal) {
+    const AttentionShape shape =
+        check_attention_inputs(query, key, value, fa::kMaxHeadDim);
     const CudaDeviceGuard device_guard(query.get_device());
     const cudaStream_t stream = at::cuda::getCurrentCUDAStream();
     torch::Tensor output = torch::empty_like(query);
@@ -152,10 +149,5 @@ std::vector<torch::Tensor> flash_attention_v2_forward(torch::Tensor query,
             query, key, value, output, logsumexp, shape, stream);
     }
     check_cuda(cudaGetLastError(), "flash_attention_v2 failed.");
-    return {output, logsumexp};
-}
-
-torch::Tensor flash_attention_v2(torch::Tensor query, torch::Tensor key,
-                                 torch::Tensor value, bool causal) {
-    return flash_attention_v2_forward(query, key, value, causal)[0];
+    return output;
 }
