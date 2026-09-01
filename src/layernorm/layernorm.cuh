@@ -32,6 +32,20 @@ void layer_norm_f32(torch::Tensor x, torch::Tensor y, float g, float b) {
     DISPATCH_LAYER_NORM_F32_KERNEL(s, d)
 }
 
+// dynamic dim f32
+void layer_norm_f32_dyn(torch::Tensor x, torch::Tensor y, float g, float b) {
+    CHECK_TORCH_TENSOR_DTYPE(x, torch::kFloat32)
+    CHECK_TORCH_TENSOR_DTYPE(y, torch::kFloat32)
+    CHECK_TORCH_TENSOR_SAME_SHAPE(x, y)
+    const int s = x.size(0);
+    const int d = x.size(1);
+    dim3 block(256);
+    dim3 grid((s));
+    layer_norm_f32_dyn_kernel<256>
+        <<<grid, block>>>(reinterpret_cast<float *>(x.data_ptr()),
+                          reinterpret_cast<float *>(y.data_ptr()), g, b, (d));
+}
+
 // f32x4
 #define LAUNCH_LAYER_NORM_F32x4_KERNEL(d)                                      \
     layer_norm_f32x4_kernel<(d) / 4><<<grid, block>>>(                         \

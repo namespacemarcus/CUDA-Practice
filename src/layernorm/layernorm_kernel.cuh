@@ -31,6 +31,42 @@ __global__ void layer_norm_f32_kernel(float *x, float *y, float gamma,
     }
 }
 
+template <const int NUM_THREADS = 256>
+__global__ void layer_norm_f32_dyn_kernel(float *x, float *y, float gamma,
+                                          float beta, int d) {
+    const float epsilon = 1e-5f;
+    float *x_row = x + blockIdx.x * d;
+    float *y_row = y + blockIdx.x * d;
+
+    __shared__ float s_mean;
+    __shared__ float s_variance;
+
+    float local_sum{0.0f};
+    for (int col = threadIdx.x; col < d; col += blockDim.x) {
+        local_sum += x_row[col];
+    }
+    float sum = block_reduce_sum_f32<NUM_THREADS>(local_sum);
+    if (threadIdx.x == 0) {
+        s_mean = sum / (float)d;
+    }
+    __syncthreads();
+
+    float local_variance{0.0f};
+    for (int col = threadIdx.x; col < d; col += blockDim.x) {
+        float x_hat = x_row[col] - s_mean;
+        local_variance += x_hat * x_hat;
+    }
+    float variance = block_reduce_sum_f32<NUM_THREADS>(local_variance);
+    if (threadIdx.x == 0) {
+        s_variance = rsqrtf(variance / (float)d + epsilon);
+    }
+    __syncthreads();
+
+    for (int col = threadIdx.x; col < d; col += blockDim.x) {
+        y_row[col] = ((x_row[col] - s_mean) * s_variance) * gamma + beta;
+    }
+}
+
 template <const int NUM_THREADS = 256 / 4>
 __global__ void layer_norm_f32x4_kernel(float *x, float *y, float gamma,
                                         float beta, int s, int d) {

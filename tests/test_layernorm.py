@@ -32,6 +32,18 @@ F32X4_SHAPES = [
     (2, 4096),
 ]
 
+F32_DYN_SHAPES = [
+    (1, 1),
+    (2, 3),
+    (4, 100),
+    (3, 333),
+    (2, 1000),
+    (4, 1025),
+    (2, 2048),
+    (1, 8192),
+    (3, 10000),
+]
+
 F16_F16_SHAPES = [
     (1, 64),
     (4, 128),
@@ -108,6 +120,17 @@ def test_layer_norm_f32x4(shape):
     x = torch.randn(S, D, device="cuda", dtype=torch.float32).contiguous()
     y = torch.zeros_like(x)
     lib.layer_norm_f32x4(x, y, gamma, beta)
+    expected = _ref_layer_norm(x, gamma, beta)
+    torch.testing.assert_close(y, expected, rtol=1e-4, atol=1e-5)
+
+
+@pytest.mark.parametrize("shape", F32_DYN_SHAPES)
+def test_layer_norm_f32_dyn(shape):
+    S, D = shape
+    gamma, beta = 1.0, 0.0
+    x = torch.randn(S, D, device="cuda", dtype=torch.float32).contiguous()
+    y = torch.zeros_like(x)
+    lib.layer_norm_f32_dyn(x, y, gamma, beta)
     expected = _ref_layer_norm(x, gamma, beta)
     torch.testing.assert_close(y, expected, rtol=1e-4, atol=1e-5)
 
@@ -189,9 +212,21 @@ def test_layer_norm_affine(shape, gamma, beta):
     torch.testing.assert_close(y, expected, rtol=1e-4, atol=1e-5)
 
 
+@pytest.mark.parametrize("shape", [(4, 300), (2, 2048)])
+@pytest.mark.parametrize("gamma,beta", [(2.0, -1.0), (0.5, 3.0)])
+def test_layer_norm_f32_dyn_affine(shape, gamma, beta):
+    S, D = shape
+    x = torch.randn(S, D, device="cuda", dtype=torch.float32).contiguous()
+    y = torch.zeros_like(x)
+    lib.layer_norm_f32_dyn(x, y, gamma, beta)
+    expected = _ref_layer_norm(x, gamma, beta)
+    torch.testing.assert_close(y, expected, rtol=1e-4, atol=1e-5)
+
+
 ALL_FNS = [
     "layer_norm_f32",
     "layer_norm_f32x4",
+    "layer_norm_f32_dyn",
     "layer_norm_f16_f16",
     "layer_norm_f16x2_f16",
     "layer_norm_f16x8_f16",

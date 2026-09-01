@@ -13,4 +13,6 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
           "layer_norm_f16x8_pack_f16");
     m.def("layer_norm_f16x8_pack_f32", &layer_norm_f16x8_pack_f32,
           "layer_norm_f16x8_pack_f32");
+
+    m.def("layer_norm_f32_dyn", &layer_norm_f32_dyn, "layer_norm_f32_dyn");
 }
